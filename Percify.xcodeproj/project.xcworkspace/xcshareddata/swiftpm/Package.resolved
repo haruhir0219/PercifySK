@@ -1,0 +1,24 @@
+{
+  "originHash" : "85ecd5a7d485d106344e4c496b1b75c493cf44b024f9006efb67eb28ca980391",
+  "pins" : [
+    {
+      "identity" : "confettiswiftui",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/simibac/ConfettiSwiftUI",
+      "state" : {
+        "revision" : "9ae5bc2ce2149980884d4612321c3a266d6bf82c",
+        "version" : "3.0.0"
+      }
+    },
+    {
+      "identity" : "glur",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/joogps/Glur",
+      "state" : {
+        "revision" : "178af6499ed7957c7f91187fdee2b09d322f5b87",
+        "version" : "1.1.0"
+      }
+    }
+  ],
+  "version" : 3
+}

@@ -9,11 +9,12 @@ struct ProfileView: View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color.indigo.opacity(0.6), Color.purple.opacity(0.2), //Color(.systemGroupedBackground)
+                    Color.indigo.opacity(0.7), Color.purple.opacity(0.15), Color(.systemGroupedBackground), Color(.systemGroupedBackground), Color(.systemGroupedBackground), Color(.systemGroupedBackground), Color(.systemGroupedBackground)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
             )
+            .padding(.all, -50)
             .ignoresSafeArea()
             
             VStack {
@@ -27,25 +28,26 @@ struct ProfileView: View {
             }
             .padding()
             .navigationTitle("マイページ")
-            .toolbarTitleDisplayMode(.inline)
+            .toolbarTitleDisplayMode(.inlineLarge)
             .toolbar {
-                ToolbarItemGroup(placement: .topBarLeading) {
-                    HStack {
-                        HStack {
-                            Button(action: { isShowingMembership = true }) {
-                                Image(systemName: "chart.bar.fill")
-                            }
-                        }
-                        .matchedTransitionSource(id: "membership", in: transition)
-                    }
-                    .buttonStyle(.glassProminent)
-                }
                 ToolbarSpacer(.fixed)
                 ToolbarSpacer(.fixed, placement: .topBarTrailing)
                 ToolbarItemGroup(placement: .topBarTrailing) {
                     HStack {
+                        Button(action: { isShowingMembership = true }) {
+                            Image(systemName: "star")
+                        }
+                    }
+                    .matchedTransitionSource(id: "membership", in: transition)
+                    HStack {
                         Button(action: { isShowingSearch = true }) {
                             Image(systemName: "line.3.horizontal.decrease")
+                        }
+                    }
+                    .matchedTransitionSource(id: "search", in: transition)
+                    HStack {
+                        Button(action: { isShowingSearch = true }) {
+                            Image(systemName: "magnifyingglass")
                         }
                     }
                     .matchedTransitionSource(id: "search", in: transition)

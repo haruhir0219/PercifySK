@@ -9,11 +9,12 @@ struct CalendarView: View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color.indigo.opacity(0.6), Color.purple.opacity(0.2), //Color(.systemGroupedBackground)
+                    Color.indigo.opacity(0.7), Color.purple.opacity(0.15), Color(.systemGroupedBackground), Color(.systemGroupedBackground), Color(.systemGroupedBackground), Color(.systemGroupedBackground), Color(.systemGroupedBackground)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
             )
+            .padding(.all, -50)
             .ignoresSafeArea()
 
             VStack {
@@ -54,12 +55,11 @@ struct CalendarView: View {
                 HStack {
                     HStack {
                         Button(action: { isShowingMembership = true }) {
-                                Image(systemName: "chart.bar.fill")
+                                Image(systemName: "star")
                         }
                     }
                     .matchedTransitionSource(id: "membership", in: transition)
                 }
-                .buttonStyle(.glassProminent)
             }
             ToolbarSpacer(.fixed)
             ToolbarSpacer(.fixed, placement: .topBarTrailing)

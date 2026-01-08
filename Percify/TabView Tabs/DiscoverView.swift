@@ -1,14 +1,23 @@
 import SwiftUI
 import UIKit
+import ConfettiSwiftUI
 
 struct DiscoverView: View {
     @Namespace var transition
     @State private var isShowingSearch = false
     @State private var isShowingMembership = false
+    @State private var isShowingSkippedList = false
+    @State private var isShowingLikedList = false
     @State private var jobStore = JobStore()
-    @State private var baseOffsets: [String: CGFloat] = [:]
+    @State private var confettiTrigger: Int = 0
 
     private enum SwipeResult { case like, dislike }
+    
+    // Computed property for header offset based on screen size
+    private var headerOffset: CGFloat {
+        let screenHeight = UIScreen.main.bounds.height
+        return screenHeight <= 844 ? -18 : 0 // 667 is iPhone SE/8 height
+    }
 
     private func handleSwipe(result: SwipeResult, item: Recruitment) {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.9)) {
@@ -31,11 +40,12 @@ struct DiscoverView: View {
         ZStack {
             LinearGradient(
                 colors: [
-                    Color.indigo.opacity(0.6), Color.purple.opacity(0.2), //Color(.systemGroupedBackground)
+                    Color.indigo.opacity(0.7), Color.purple.opacity(0.15), Color(.systemGroupedBackground), Color(.systemGroupedBackground), Color(.systemGroupedBackground)
                 ],
                 startPoint: .top,
                 endPoint: .bottom
             )
+            .padding(.all, -50)
             .ignoresSafeArea()
             
             VStack {
@@ -51,54 +61,11 @@ struct DiscoverView: View {
                                 .foregroundColor(.black)
                                 .foregroundColor(.secondary)
                                 .padding(.top, 8)
-                            Text("あなたへのおすすめは全て\n確認しました。")
+                            Text("あなたへのおすすめは全て確認しました。\nお気に入りにスワイプしたポジションを\nチェックして、簡単に応募できます。")
                                 .font(.body)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
-                                .padding(.horizontal, 40)
-                            
-                            // Display statistics when all cards are swiped
-                            VStack(spacing: 12) {
-                                HStack(spacing: 24) {
-                                    VStack(spacing: 4) {
-                                        Text("\(jobStore.likeCount)")
-                                            .font(.title)
-                                            .fontWeight(.bold)
-                                            .fontDesign(.rounded)
-                                            .foregroundColor(.accentColor)
-                                        Text("お気に入り")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    
-                                    VStack(spacing: 4) {
-                                        Text("\(jobStore.skipCount)")
-                                            .font(.title)
-                                            .fontWeight(.bold)
-                                            .fontDesign(.rounded)
-                                            .foregroundColor(.black)
-                                        Text("スキップ")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                    
-                                    VStack(spacing: 4) {
-                                        Text("\(jobStore.totalInteractions)")
-                                            .font(.title)
-                                            .fontWeight(.bold)
-                                            .fontDesign(.rounded)
-                                            .foregroundColor(.blue)
-                                        Text("合計")
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                            .padding(.horizontal)
-                                    }
-                                }
-                                .padding(.all, 6)
-                                .padding()
-                                .glassEffect(.clear.interactive())
-                            }
-                            .padding(.top, 24)
+                                .padding(.horizontal)
                         }
                         .padding()
                         .scaleEffect(jobStore.isEmpty ? 1.0 : 0.95)
@@ -111,19 +78,22 @@ struct DiscoverView: View {
                             let generator = UINotificationFeedbackGenerator()
                             generator.prepare()
                             generator.notificationOccurred(.success)
+                            confettiTrigger += 1
                         }
                     } else {
                         ForEach(Array(jobStore.cards.enumerated()), id: \.element.id) { index, item in
-                            // Randomize only the tilt direction; keep magnitude fixed at 1.5°
-                            let seed = UInt64(index + 1)
-                            let sign: Double = ((Int(seed & 1) == 0) ? 1.0 : -1.0)
-                            let angle = Angle(degrees: 1.5 * sign)
-                            // Slight vertical offset so the stack looks layered
-                            let key = "\(item.titleText)|\(item.companyName)|\(item.location)"
-                            let verticalOffset: CGFloat = baseOffsets[key] ?? CGFloat((jobStore.cards.count - 1 - index)) * 6.0
-                            // Slight z offset to ensure layering looks natural
-                            let z = Double(index)
                             let isTopCard = index == jobStore.cards.count - 1
+                            // Calculate position in stack (0 = bottom, cards.count-1 = top)
+                            let positionFromTop = jobStore.cards.count - 1 - index
+                            
+                            // Scale: top card = 1.0, each card below shrinks by 2%
+                            let scale: CGFloat = 1.0 - (CGFloat(positionFromTop) * 0.05)
+                            
+                            // Vertical offset: each card below moves down by 8 points
+                            let verticalOffset: CGFloat = CGFloat(positionFromTop) * 28.0
+                            
+                            // Z-index for proper layering
+                            let z = Double(index)
                             
                             RecruitmentCardView(
                                 recruitment: item,
@@ -134,119 +104,156 @@ struct DiscoverView: View {
                                     handleSwipe(result: .dislike, item: disliked)
                                 }
                             )
+                            //.clipped()
                             .padding(.horizontal)
                             .padding(.vertical, 12)
-                            .onAppear {
-                                if baseOffsets[key] == nil {
-                                    baseOffsets[key] = CGFloat((jobStore.cards.count - 1 - index)) * 6.0
-                                }
-                            }
-                            // Apply tiny tilt and stacking offsets; keep top card hit-testable
-                            .rotationEffect(angle)
+                            .shadow(color: Color.black.opacity(0.15), radius: 12, x: 0, y: 4)
+                            // Apply scale and vertical offset for stacking effect
+                            .scaleEffect(scale)
                             .offset(y: verticalOffset)
                             .zIndex(z)
                             .allowsHitTesting(isTopCard)
+                            .animation(.spring(response: 0.65, dampingFraction: 0.45), value: isTopCard)
                         }
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .animation(.spring(response: 0.45, dampingFraction: 0.9), value: jobStore.isEmpty)
-                .padding(.bottom, 30)
+                .padding(.bottom, 25)
+                .confettiCannon(trigger: $confettiTrigger, num: 170, confettis: [.shape(.circle), .shape(.triangle), .shape(.square), .shape(.slimRectangle)], confettiSize: 11.0, openingAngle: Angle(degrees: 0), closingAngle: Angle(degrees: 360), radius: 300)
             }
-            
-            //.navigationTitle("さがす")
-            .safeAreaBar(edge: .bottom) {HStack(spacing: 48) {
-                Button {
-                    if let top = jobStore.cards.last { handleSwipe(result: .dislike, item: top) }
-                } label: {
-                    HStack(spacing: 8) {
-                        Text(String(jobStore.skipCount))
-                            .fontDesign(.rounded)
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .contentTransition(.numericText())
-                            .animation(.snappy, value: jobStore.skipCount)
-                        Text("スキップ　")
-                            .font(.headline)
+            ZStack {
+                VStack {
+                    ZStack {
+                        Rectangle()
+                            .fill(Color.clear)
+                            .frame(height: 125)
+                            .glassEffect(.clear, in: .rect(cornerRadius: 32))
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 32)
+                                .fill(Color.clear)
+                                .frame(height: 125)
+                            ProgressView(value: jobStore.swipeProgressPercentage, total: 100)
+                                .tint(.accentColor)
+                                .padding()
+                                .offset(y: 60.5)
+                                .opacity(jobStore.swipeProgressPercentage == 0 ? 0 : 1)
+                        }
+                        .clipShape(RoundedRectangle(cornerRadius: 32))
                     }
-                    .padding(.all, 8)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, -8)
+                    .offset(y: headerOffset)
+                    
+                    Spacer()
                 }
-                .buttonStyle(.glassProminent)
-                .tint(.black)
-                .disabled(jobStore.isEmpty)
-                
-                Button {
-                    undoLastSwipe()
-                } label: {
-                    Image(systemName: "arrow.counterclockwise")
-                        .font(.headline)
-                        .padding(.all, 8)
-                        .padding(.horizontal, -3)
-                        .foregroundColor(jobStore.canUndo ? .accentColor : .secondary)
-                }
-                .buttonStyle(.glass)
-                .controlSize(.small)
-                .disabled(!jobStore.canUndo)
-                .padding(.horizontal, -25)
-                
-                Button {
-                    if let top = jobStore.cards.last { handleSwipe(result: .like, item: top) }
-                } label: {
-                    HStack(spacing: 8) {
-                        Text("お気に入り")
-                            .font(.headline)
-                        Text(String(jobStore.likeCount))
-                            .fontDesign(.rounded)
-                            .font(.headline)
-                            .fontWeight(.bold)
-                            .contentTransition(.numericText())
-                            .animation(.snappy, value: jobStore.likeCount)
-                    }
-                    .padding(.all, 8)
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, -8)
-                }
-                .buttonStyle(.glassProminent)
-                //.tint(.green)
-                .disabled(jobStore.isEmpty)
             }
-            .padding(.horizontal, 6)
-            .padding(.horizontal)
-            .padding(.bottom)
-            }
-            //.padding(.top, 15)
-            //.padding(.bottom, 40)
+            .frame(maxHeight: .infinity, alignment: .top)
+            .ignoresSafeArea(edges: .top)
         }
+        .overlay(alignment: .bottom) {
+            VariableBlurView(maxBlurRadius: 10, direction: .blurredBottomClearTop)
+                .frame(height: 180)
+        }
+        .ignoresSafeArea()
+        .safeAreaBar(edge: .bottom) {
+                                    Button(action: { }) {
+                                        ZStack {
+                                            Text(" ")
+                                                .font(.headline)
+                                                .frame(maxWidth: .infinity)
+                                                .padding(.vertical, 10)
+                                                .foregroundColor(.black)
+                                                .multilineTextAlignment(.center)
+                                            HStack(spacing: 42) {
+                                                            Button {
+                                                                isShowingSkippedList = true
+                                                            } label: {
+                                                                HStack(spacing: 8) {
+                                                                    Text(String(jobStore.skipCount))
+                                                                        .fontDesign(.rounded)
+                                                                        .font(.headline)
+                                                                        .fontWeight(.bold)
+                                                                        .contentTransition(.numericText())
+                                                                        .animation(.snappy, value: jobStore.skipCount)
+                                                                    Text("スキップ　")
+                                                                        .font(.subheadline)
+                                                                        .fontWeight(.semibold)
+                                                                }
+                                                                .padding(.all, 8)
+                                                                .padding(.vertical, -2)
+                                                                .frame(maxWidth: .infinity)
+                                                                .padding(.horizontal, -8)
+                                                            }
+                                                            .matchedTransitionSource(id: "skipped", in: transition)
+                                                            .buttonStyle(.glassProminent)
+                                                            .tint(.black.opacity(0.9))
+                                                            
+                                                            Button {
+                                                                undoLastSwipe()
+                                                            } label: {
+                                                                Image(systemName: "arrow.trianglehead.counterclockwise")
+                                                                    .font(.headline)
+                                                                    .padding(.all, 6)
+                                                                    .padding(.horizontal, -3)
+                                                                    .foregroundColor(jobStore.canUndo ? .accentColor : .secondary)
+                                                            }
+                                                            .buttonStyle(.glass)
+                                                            .controlSize(.small)
+                                                            .disabled(!jobStore.canUndo)
+                                                            .padding(.horizontal, -25)
+                                                            
+                                                            Button {
+                                                                isShowingLikedList = true
+                                                            } label: {
+                                                                HStack(spacing: 8) {
+                                                                    Text("お気に入り")
+                                                                        .font(.subheadline)
+                                                                        .fontWeight(.semibold)
+                                                                    Text(String(jobStore.likeCount))
+                                                                        .fontDesign(.rounded)
+                                                                        .font(.headline)
+                                                                        .fontWeight(.bold)
+                                                                        .contentTransition(.numericText())
+                                                                        .animation(.snappy, value: jobStore.likeCount)
+                                                                }
+                                                                .padding(.all, 8)
+                                                                .padding(.vertical, -2)
+                                                                .frame(maxWidth: .infinity)
+                                                                .padding(.horizontal, -8)
+                                                            }
+                                                            .matchedTransitionSource(id: "liked", in: transition)
+                                                            .buttonStyle(.glassProminent).tint(.accentColor.opacity(0.9))
+                                                        }
+                                                        .padding(.horizontal, -2)
+                                                        .padding(.vertical, 1)
+                                        }
+                                    }
+                                    //.buttonStyle(.glass)
+                                    .padding(.vertical, -4)
+                                    .padding(.all, 10)
+                                    .glassEffect(.clear.interactive())
+                                    .frame(width: UIScreen.main.bounds.width * 0.91)
+                                    .padding(.bottom, 8)
+                                }
         .toolbarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                Image("PercifySK")
+            ToolbarItem(placement: .topBarLeading) {
+                Image("PercifySKLockup")
                     .resizable()
                     .scaledToFill()
-                    .frame(width: 42, height: 42)
+                    .frame(height: 40)
+                    .padding(.leading, -6)
+                    //.colorInvert()
             }
-            ToolbarItemGroup(placement: .topBarLeading) {
-                HStack {
-                    HStack {
-                        Button(action: { isShowingMembership = true }) {
-                            Image(systemName: "chart.bar.fill")
-                        }
-                    }
-                    .matchedTransitionSource(id: "membership", in: transition)
-                }
-                .buttonStyle(.glassProminent)
-            }
-            ToolbarSpacer(.fixed)
-            ToolbarSpacer(.fixed, placement: .topBarTrailing)
+            .sharedBackgroundVisibility(.hidden)
             ToolbarItemGroup(placement: .topBarTrailing) {
-                HStack {
                     Button(action: { isShowingSearch = true }) {
                         Image(systemName: "line.3.horizontal.decrease")
                     }
-                }
                 .matchedTransitionSource(id: "search", in: transition)
+                    Button(action: { isShowingMembership = true }) {
+                        Image(systemName: "magnifyingglass")
+                    }
+                .matchedTransitionSource(id: "membership", in: transition)
             }
         }
         .sheet(isPresented: $isShowingSearch) {
@@ -256,6 +263,14 @@ struct DiscoverView: View {
         .sheet(isPresented: $isShowingMembership) {
             MembershipView()
                 .navigationTransition(.zoom(sourceID: "membership", in: transition))
+        }
+        .sheet(isPresented: $isShowingSkippedList) {
+            SkippedListView(jobStore: jobStore)
+                .navigationTransition(.zoom(sourceID: "skipped", in: transition))
+        }
+        .sheet(isPresented: $isShowingLikedList) {
+            LikedListView(jobStore: jobStore)
+                .navigationTransition(.zoom(sourceID: "liked", in: transition))
         }
     }
 }

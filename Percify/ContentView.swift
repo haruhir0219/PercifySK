@@ -26,16 +26,19 @@ struct ContentView: View {
                     HomeView()
                 }
             } label: {
-                Label("ホーム", systemImage: "house.fill")
-            }
-            
-            Tab(value: TabIdentifier.calendar) {
-                NavigationStack {
-                    CalendarView()
+                Label {
+                    Text("ホーム")
+                } icon: {
+                    Image("home.fill")
                 }
-            } label: {
-                Label("カレンダー", systemImage: "calendar")
             }
+           //Tab(value: TabIdentifier.calendar) {
+                //NavigationStack {
+                    //CalendarView()
+                //}
+            //} label: {
+                //Label("カレンダー", systemImage: "calendar")
+            //}
             
             Tab(value: TabIdentifier.discover) {
                 NavigationStack {
@@ -43,7 +46,7 @@ struct ContentView: View {
                 }
                 //.searchable(text: $searchText)
             } label: {
-                Label("さがす", systemImage: "magnifyingglass")
+                Label("さがす", systemImage: "square.stack.fill")
             }
             
             Tab(value: TabIdentifier.messages) {
@@ -51,10 +54,11 @@ struct ContentView: View {
                     MessagesView()
                 }
             } label: {
-                Label("メッセージ", systemImage: "mail.stack.fill")
+                Label("メッセージ", systemImage: "message.fill")
             }
+            .badge(3)
 
-            Tab(value: TabIdentifier.profile) {
+            Tab(value: TabIdentifier.profile, role: .search) {
                 NavigationStack {
                     ProfileView()
                 }
