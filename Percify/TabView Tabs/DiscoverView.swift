@@ -184,8 +184,7 @@ struct DiscoverView: View {
                                                                 .padding(.horizontal, -8)
                                                             }
                                                             .matchedTransitionSource(id: "skipped", in: transition)
-                                                            .buttonStyle(.glassProminent)
-                                                            .tint(.black.opacity(0.9))
+                                                            .buttonStyle(.glass)
                                                             
                                                             Button {
                                                                 undoLastSwipe()

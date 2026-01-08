@@ -58,6 +58,9 @@ struct RecruitmentCardView: View {
     
     // Image fade animation state
     @State private var imageOpacity: Double = 0
+    
+    // Circle slide animation state
+    @State private var circleOffset: CGFloat = 0
 
     // Haptic feedback generators
     private let impactLight = UIImpactFeedbackGenerator(style: .light)
@@ -71,7 +74,7 @@ struct RecruitmentCardView: View {
         cardContent
             .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
             .matchedTransitionSource(id: "card", in: transition)
-            .frame(maxWidth: .infinity)
+            .frame(width: UIScreen.main.bounds.width * 0.928)
             .frame(height: UIScreen.main.bounds.height * 0.62)
             .rotationEffect(.degrees(Double(translation.width / 20)))
             .offset(x: translation.width, y: translation.height)
@@ -219,7 +222,10 @@ struct RecruitmentCardView: View {
     
     private var badgePill: some View {
         HStack {
-            Image(systemName: "bolt.fill")
+            Image("LogoSmall")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 20, height: 25)
             Text(recruitment.badgeText)
                 .fixedSize(horizontal: true, vertical: false)
         }
@@ -288,7 +294,7 @@ struct RecruitmentCardView: View {
             HStack {
                 labelChip(text: "業界", symbol: "briefcase.fill", chipColor: .black)
                     .fontWeight(.semibold)
-                pill(text: String(recruitment.industryRight.prefix(4)))
+                pill(text: String(recruitment.industryRight.prefix(7)))
                     .lineLimit(1)
                     .padding(.trailing, 20)
                     .fontWeight(.semibold)
@@ -382,36 +388,42 @@ struct RecruitmentCardView: View {
                     labelChip(text: "新卒年収", chipColor: .purple)
                         .fontWeight(.semibold)
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(recruitment.pay1Value)
-                            .fixedSize(horizontal: true, vertical: true)
-                            .font(.title)
-                            .fontWeight(.semibold)
-                        Text("000万円~、最大")
+                        HStack(alignment: .bottom, spacing: 2) {
+                            Text(recruitment.pay1Value)
+                                .fixedSize(horizontal: true, vertical: true)
+                                .font(.title)
+                                .fontWeight(.semibold)
+                            Text("万円")
+                                .font(Font.title3.bold())
+                                .padding(.bottom, 3)
+                        }
+                        Text("000万円~")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                 }
                 Spacer()
-                Image(systemName: "arrowtriangle.right.fill")
-                    .font(Font.title.bold())
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [.black.opacity(0.4), .black.opacity(0.7)],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                    )
+                Image("Arrow")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 40)
                     .offset(y: 45)
+                    .opacity(0.3)
                 Spacer()
                 VStack(alignment: .trailing, spacing: 6) {
                     labelChip(text: "30歳年収", chipColor: .purple)
                         .fontWeight(.semibold)
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text(recruitment.pay2Value)
-                            .fixedSize(horizontal: true, vertical: true)
-                            .font(.title)
-                            .fontWeight(.semibold)
-                        Text("0000万円~、最大")
+                        HStack(alignment: .bottom, spacing: 2) {
+                            Text(recruitment.pay2Value)
+                                .fixedSize(horizontal: true, vertical: true)
+                                .font(.title)
+                                .fontWeight(.semibold)
+                            Text("万円")
+                                .font(Font.title3.bold())
+                                .padding(.bottom, 3)
+                        }
+                        Text("0000万円~")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -513,22 +525,50 @@ struct RecruitmentCardView: View {
     
     private var likeOverlay: some View {
         ZStack {
-            Color.accentColor.opacity(0.6)
-                .opacity(overlayOpacity(for: translation.width))
-                .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
-                .transition(.opacity)
+            LinearGradient(
+                colors: [Color.accentColor.opacity(0.2), Color.accentColor.opacity(0.8)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+            .opacity(overlayOpacity(for: translation.width))
+            .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+            .transition(.opacity)
             RoundedRectangle(cornerRadius: 32, style: .continuous)
                 .fill(.ultraThinMaterial)
                 .opacity(overlayOpacity(for: translation.width))
                 .transition(.opacity)
+            Color.clear.opacity(0.0)
+                .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                .transition(.opacity)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 32, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.45), lineWidth: 1.2)
+                )
             
-            VStack {
-                HStack {
+            VStack(alignment: .leading) {
+                HStack(alignment: .top) {
                     VStack {
-                        HStack {
-                            Image(systemName: "arrowshape.turn.up.right.fill")
-                                .font(.title)
-                                .fontWeight(.semibold)
+                        ZStack {
+                            Capsule()
+                                .fill(.ultraThinMaterial)
+                                .frame(width: 160, height: 40)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 32, style: .continuous)
+                                        .strokeBorder(Color.white.opacity(0.45), lineWidth: 1.2)
+                                )
+                                .padding()
+                            Circle()
+                                .fill(Color.white)
+                                .frame(width: 36, height: 36)
+                                .offset(x: circleOffset)
+                                .onAppear {
+                                    startCircleAnimation()
+                                }
+                        }
+                        VStack(alignment: .center, spacing: 4) {
+                            Text("右にフリックして完了")
+                                .font(.headline)
+                                .foregroundColor(.white)
                             Text("お気に入り")
                                 .font(.title)
                                 .fontWeight(.semibold)
@@ -536,13 +576,9 @@ struct RecruitmentCardView: View {
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
                         .foregroundStyle(.white)
-                        Text("右にフリックして完了")
-                            .font(.headline)
-                            .foregroundColor(.white)
-                        //Spacer()
                     }
                     .padding(20)
-                    Spacer()
+                    //Spacer()
                 }
             }
             .allowsHitTesting(false)
@@ -551,7 +587,11 @@ struct RecruitmentCardView: View {
     
     private var dislikeOverlay: some View {
         ZStack {
-            Color.black.opacity(0.7)
+            LinearGradient(
+                colors: [Color.black.opacity(0.2), Color.black.opacity(0.8)],
+                startPoint: .topTrailing,
+                endPoint: .bottomLeading
+            )
                 .opacity(overlayOpacity(for: -translation.width))
                 .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
                 .transition(.opacity)
@@ -559,29 +599,46 @@ struct RecruitmentCardView: View {
                 .fill(.ultraThinMaterial)
                 .opacity(overlayOpacity(for: -translation.width))
                 .transition(.opacity)
+            Color.clear.opacity(0.0)
+                .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
+                .transition(.opacity)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 32, style: .continuous)
+                        .strokeBorder(Color.white.opacity(0.45), lineWidth: 1.2)
+                )
             
             VStack {
-                HStack {
-                    Spacer()
-                    VStack {
-                        HStack {
-                            Image(systemName: "arrowshape.turn.up.left.fill")
-                                .font(.title)
-                                .fontWeight(.semibold)
-                            Text("スキップ")
-                                .font(.title)
-                                .fontWeight(.semibold)
-                        }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .foregroundStyle(.white)
+                VStack {
+                    ZStack {
+                        Capsule()
+                            .fill(.ultraThinMaterial)
+                            .frame(width: 160, height: 40)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 32, style: .continuous)
+                                    .strokeBorder(Color.white.opacity(0.45), lineWidth: 1.2)
+                            )
+                            .padding()
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 36, height: 36)
+                            .offset(x: circleOffset)
+                            .onAppear {
+                                startCircleAnimation(reversed: true)
+                            }
+                    }
+                    VStack(alignment: .center, spacing: 4) {
                         Text("左にフリックして完了")
                             .font(.headline)
                             .foregroundColor(.white)
+                        Text("スキップ")
+                            .font(.title)
+                            .fontWeight(.semibold)
                     }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .foregroundStyle(.white)
                 }
                 .padding(20)
-                //Spacer()
             }
             .allowsHitTesting(false)
         }
@@ -658,6 +715,38 @@ struct RecruitmentCardView: View {
     }
     
     // MARK: - Helper Functions
+    
+    private func startCircleAnimation(reversed: Bool = false) {
+        // Calculate the distance the circle can travel
+        // Capsule width is 160, circle diameter is 36
+        // Maximum offset = (160 - 36) / 2 = 62
+        let maxOffset: CGFloat = 62
+        
+        // Set start and end positions based on direction
+        let startPosition = reversed ? maxOffset : -maxOffset
+        let endPosition = reversed ? -maxOffset : maxOffset
+        
+        // Start position
+        circleOffset = startPosition
+        
+        // Animate to end position with easeInOut, then spring back
+        withAnimation(.easeInOut(duration: 1.0)) {
+            circleOffset = endPosition
+        }
+        
+        // After reaching the end, spring back to the start and repeat
+        // Higher dampingFraction (0.75) prevents overshoot beyond the capsule edges
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.75)) {
+                circleOffset = startPosition
+            }
+            
+            // Schedule the next cycle
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                startCircleAnimation(reversed: reversed)
+            }
+        }
+    }
     
     private func startShakeAnimation() {
         withAnimation(
@@ -773,10 +862,9 @@ struct RecruitmentCardView: View {
     @ViewBuilder
     private func pill(text: String) -> some View {
         Text(text)
-            .font(.body)
+            .font(.subheadline)
             .fixedSize(horizontal: true, vertical: true)
-            .padding(.leading, 6)
-            //.padding(.vertical, 8)
+            .padding(.leading, 3)
             .foregroundStyle(.primary)
     }
 
@@ -808,14 +896,14 @@ struct RecruitmentCardView: View {
                 companyLogo: "SMBCAC",
                 badgeText: "Percify特別選考",
                 titleText: "SMBCアビエーションキャピタル事業本部MB",
-                industryLeft: "あああMBCSMBCアビエーションキャピタル事業本部",
+                industryLeft: "NULL",
                 industryRight: "ああああMBCSMBCアビエーションキャピタル",
-                typeLeft: "TypeMBCSMBCアビエーションキャピタル事業本部",
+                typeLeft: "NULL",
                 typeRight: "ああああMBCSMBCアビエーションキャピタル",
                 pay1Label: "Pay1",
-                pay1Value: "000万円",
+                pay1Value: "520",
                 pay2Label: "Pay2",
-                pay2Value: "0000万円",
+                pay2Value: "2240",
                 tag1: "#Tag Text 1MBCSMBCアビエーションキャ",
                 tag2: "#Tag Text 2MBCSMBCアビエーションキャ",
                 tag3: "#Tag Text 3MBCSMBCアビエーションキャ",

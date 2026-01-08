@@ -121,14 +121,30 @@
       }
     },
     {
-      "blend-mode" : "plus-lighter",
+      "blend-mode-specializations" : [
+        {
+          "value" : "plus-lighter"
+        },
+        {
+          "appearance" : "dark",
+          "value" : "plus-lighter"
+        }
+      ],
       "blur-material" : 0.5,
       "hidden" : false,
       "layers" : [
         {
-          "fill" : {
-            "automatic-gradient" : "extended-gray:1.00000,1.00000"
-          },
+          "fill-specializations" : [
+            {
+              "value" : {
+                "automatic-gradient" : "extended-gray:1.00000,1.00000"
+              }
+            },
+            {
+              "appearance" : "dark",
+              "value" : "automatic"
+            }
+          ],
           "glass" : true,
           "image-name" : "react.png",
           "name" : "react"
