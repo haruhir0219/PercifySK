@@ -1,9 +1,29 @@
 import SwiftUI
 
+// MARK: - Card Type Enum
+
+enum CardType: Identifiable, Equatable {
+    case recruitment(Recruitment)
+    case hint
+    
+    var id: UUID {
+        switch self {
+        case .recruitment(let recruitment):
+            return recruitment.id
+        case .hint:
+            return UUID() // Generate a unique ID for hint cards
+        }
+    }
+    
+    static func == (lhs: CardType, rhs: CardType) -> Bool {
+        lhs.id == rhs.id
+    }
+}
+
 @Observable
 class JobStore {
-    var cards: [Recruitment] = []
-    var lastRemoved: Recruitment?
+    var cards: [CardType] = []
+    var lastRemoved: CardType?
     var likeCount: Int = 0
     var skipCount: Int = 0
     
@@ -41,16 +61,25 @@ class JobStore {
         lastRemoved != nil
     }
     
-    /// Returns the progress percentage (0.0 to 1.0) of cards swiped
+    /// Returns the progress percentage (0.0 to 1.0) of cards swiped (excluding hint cards)
     var swipeProgress: Double {
         guard initialCardCount > 0 else { return 0.0 }
-        let cardsViewed = initialCardCount - cards.count
+        let recruitmentCardsRemaining = cards.filter { 
+            if case .recruitment = $0 { return true }
+            return false
+        }.count
+        let cardsViewed = initialCardCount - recruitmentCardsRemaining
         return Double(cardsViewed) / Double(initialCardCount)
     }
     
     /// Returns the progress as a percentage value (0 to 100)
     var swipeProgressPercentage: Double {
         swipeProgress * 100.0
+    }
+    
+    /// Insert a hint card at the top of the stack
+    func insertHintCard() {
+        cards.append(.hint)
     }
     
     init() {
@@ -60,7 +89,7 @@ class JobStore {
     // MARK: - Data Management
     
     private func loadInitialData() {
-        cards = [
+        let recruitmentCards: [Recruitment] = [
             Recruitment(
                 companyName: "Walt Disney Imagineering",
                 companyLogo: "Disney",
@@ -231,11 +260,26 @@ class JobStore {
             )
         ]
         
+        // Convert to CardType and set cards
+        cards = recruitmentCards.map { .recruitment($0) }
+        
         // Set the initial card count when data is first loaded
-        initialCardCount = cards.count
+        initialCardCount = recruitmentCards.count
     }
     
     // MARK: - Actions
+    
+    /// Handle swiping a hint card (just removes it, no tracking)
+    func handleHintSwipe() {
+        // Find and remove the hint card
+        if let idx = cards.firstIndex(where: { 
+            if case .hint = $0 { return true }
+            return false
+        }) {
+            lastRemoved = cards.remove(at: idx)
+            lastAction = .hintDismiss
+        }
+    }
     
     func handleLike(item: Recruitment) {
         likeCount += 1
@@ -256,11 +300,22 @@ class JobStore {
     func undoLastSwipe() {
         guard let removed = lastRemoved else { return }
         
+        // Check if it was a hint card - if so, just restore it
+        if case .hint = removed {
+            cards.append(removed)
+            lastRemoved = nil
+            lastAction = nil
+            return
+        }
+        
+        // Otherwise, handle as a recruitment card
+        guard case .recruitment(let recruitment) = removed else { return }
+        
         // Restore the card to the deck
         cards.append(removed)
         
         // Remove from swipe history
-        if let lastHistoryIndex = swipeHistory.lastIndex(where: { $0.recruitment == removed }) {
+        if let lastHistoryIndex = swipeHistory.lastIndex(where: { $0.recruitment == recruitment }) {
             swipeHistory.remove(at: lastHistoryIndex)
         }
         
@@ -270,15 +325,17 @@ class JobStore {
             case .like:
                 likeCount = max(0, likeCount - 1)
                 // Remove from liked jobs
-                if let index = likedJobs.firstIndex(of: removed) {
+                if let index = likedJobs.firstIndex(of: recruitment) {
                     likedJobs.remove(at: index)
                 }
             case .dislike:
                 skipCount = max(0, skipCount - 1)
                 // Remove from skipped jobs
-                if let index = skippedJobs.firstIndex(of: removed) {
+                if let index = skippedJobs.firstIndex(of: recruitment) {
                     skippedJobs.remove(at: index)
                 }
+            case .hintDismiss:
+                break // No counters to update
             }
         }
         
@@ -291,7 +348,7 @@ class JobStore {
     func undoAllSwipes() {
         // Restore all cards back to the deck in reverse order of how they were swiped
         // This ensures the most recently swiped cards are on top
-        let allSwipedCards = swipeHistory.reversed().map { $0.recruitment }
+        let allSwipedCards = swipeHistory.reversed().map { CardType.recruitment($0.recruitment) }
         cards.append(contentsOf: allSwipedCards)
         
         // Clear all counters and arrays
@@ -309,13 +366,18 @@ class JobStore {
     // MARK: - Private Helpers
     
     private enum SwipeAction {
-        case like, dislike
+        case like, dislike, hintDismiss
     }
     
     private var lastAction: SwipeAction?
     
     private func removeCard(_ item: Recruitment, action: SwipeAction) {
-        if let idx = cards.firstIndex(of: item) {
+        if let idx = cards.firstIndex(where: { 
+            if case .recruitment(let recruitment) = $0, recruitment == item {
+                return true
+            }
+            return false
+        }) {
             lastRemoved = cards.remove(at: idx)
             lastAction = action
         }
@@ -334,9 +396,14 @@ class JobStore {
     
     /// Add new cards to the deck
     func addCards(_ newCards: [Recruitment]) {
-        cards.append(contentsOf: newCards)
+        let cardTypes = newCards.map { CardType.recruitment($0) }
+        cards.append(contentsOf: cardTypes)
         // Update initial count to include newly added cards
-        initialCardCount = max(initialCardCount, cards.count)
+        let recruitmentCount = cards.filter { 
+            if case .recruitment = $0 { return true }
+            return false
+        }.count
+        initialCardCount = max(initialCardCount, recruitmentCount)
     }
     
     /// Reset the store to initial state
@@ -375,6 +442,31 @@ class JobStore {
             // Remove from swipe history
             if let historyIndex = swipeHistory.lastIndex(where: { $0.recruitment == job && $0.action == .dislike }) {
                 swipeHistory.remove(at: historyIndex)
+            }
+        }
+    }
+    
+    /// Move all skipped jobs to the liked list
+    func moveAllSkippedToLiked() {
+        // Create a copy of skipped jobs to iterate over
+        let jobsToMove = skippedJobs
+        
+        for job in jobsToMove {
+            // Remove from skipped list
+            if let skippedIndex = skippedJobs.firstIndex(of: job) {
+                skippedJobs.remove(at: skippedIndex)
+                skipCount = max(0, skipCount - 1)
+            }
+            
+            // Add to liked list if not already there
+            if !likedJobs.contains(job) {
+                likedJobs.append(job)
+                likeCount += 1
+            }
+            
+            // Update swipe history - change dislike to like
+            if let historyIndex = swipeHistory.lastIndex(where: { $0.recruitment == job && $0.action == .dislike }) {
+                swipeHistory[historyIndex] = (recruitment: job, action: .like)
             }
         }
     }

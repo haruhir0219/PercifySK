@@ -395,7 +395,7 @@ struct RecruitmentDetailsView: View {
     }
 
     private var allTabs: [String] {
-        ["なにをやっているのか", "仕事内容", "給与", "勤務時間、休日", "勤務地、転勤", "福利厚生", "選考ルート", "選考ポイント", "同じ企業から"]
+        ["なにをやっているのか", "特別選考ルート", "仕事内容", "給与", "勤務時間、休日", "勤務地、転勤", "福利厚生", "選考ポイント", "同じ企業から"]
     }
     
     @ViewBuilder
@@ -553,7 +553,7 @@ struct RecruitmentDetailsView: View {
                     tab5Content()
                 case "福利厚生":
                     tab6Content()
-                case "選考ルート":
+                case "特別選考ルート":
                     tab7Content()
                 case "選考ポイント":
                     tab8Content()
@@ -581,7 +581,7 @@ struct RecruitmentDetailsView: View {
             tab5Content()
         case "福利厚生":
             tab6Content()
-        case "選考ルート":
+        case "特別選考ルート":
             tab7Content()
         case "選考ポイント":
             tab8Content()
@@ -1508,7 +1508,12 @@ struct RecruitmentDetailsView: View {
     private var companyHeaderSection: some View {
         VStack {
             companyLogoRow
-            titleText
+            VStack(alignment: .leading, spacing: 16) {
+                badgeText
+                    .padding(.horizontal)
+                    .offset(x: 0, y: -50)
+                titleText
+            }
         }
     }
     
@@ -1523,6 +1528,33 @@ struct RecruitmentDetailsView: View {
                 .padding(.leading, 10)
             Spacer()
         }
+    }
+    
+    private var badgeText: some View {
+        HStack {
+            Image("LogoSmall")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 20, height: 25)
+            Text("Percify特別選考ルート")
+                .fixedSize(horizontal: true, vertical: false)
+        }
+            .font(.headline)
+            .lineLimit(1)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(
+                LinearGradient(colors: [.purple, .purple], startPoint: .top, endPoint: .bottom)
+                    .overlay(
+                        LinearGradient(colors: [.clear, .white.opacity(0.2)], startPoint: .bottom, endPoint: .top)
+                    )
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule()
+                            .strokeBorder(Color.white.opacity(0.4), lineWidth: 0.5)
+                    )
+            )
+            .foregroundStyle(.white)
     }
     
     private var titleText: some View {

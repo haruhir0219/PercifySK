@@ -29,6 +29,18 @@ struct DiscoverView: View {
             }
         }
     }
+    
+    private func handleHintSwipe() {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.9)) {
+            jobStore.handleHintSwipe()
+        }
+    }
+    
+    private func showHint() {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.9)) {
+            jobStore.insertHintCard()
+        }
+    }
 
     private func undoLastSwipe() {
         withAnimation(.spring(response: 0.4, dampingFraction: 0.9)) {
@@ -81,7 +93,7 @@ struct DiscoverView: View {
                             confettiTrigger += 1
                         }
                     } else {
-                        ForEach(Array(jobStore.cards.enumerated()), id: \.element.id) { index, item in
+                        ForEach(Array(jobStore.cards.enumerated()), id: \.element.id) { index, cardType in
                             let isTopCard = index == jobStore.cards.count - 1
                             // Calculate position in stack (0 = bottom, cards.count-1 = top)
                             let positionFromTop = jobStore.cards.count - 1 - index
@@ -95,15 +107,22 @@ struct DiscoverView: View {
                             // Z-index for proper layering
                             let z = Double(index)
                             
-                            RecruitmentCardView(
-                                recruitment: item,
-                                onLike: { liked in
-                                    handleSwipe(result: .like, item: liked)
-                                },
-                                onDislike: { disliked in
-                                    handleSwipe(result: .dislike, item: disliked)
+                            Group {
+                                switch cardType {
+                                case .recruitment(let item):
+                                    RecruitmentCardView(
+                                        recruitment: item,
+                                        onLike: { liked in
+                                            handleSwipe(result: .like, item: liked)
+                                        },
+                                        onDislike: { disliked in
+                                            handleSwipe(result: .dislike, item: disliked)
+                                        }
+                                    )
+                                case .hint:
+                                    HintCardView(onSwipe: handleHintSwipe)
                                 }
-                            )
+                            }
                             //.clipped()
                             .padding(.horizontal)
                             .padding(.vertical, 12)
@@ -244,6 +263,14 @@ struct DiscoverView: View {
                     //.colorInvert()
             }
             .sharedBackgroundVisibility(.hidden)
+            ToolbarItem(placement: .topBarTrailing) {
+                Button(action: { showHint() }) {
+                    Image(systemName: "questionmark")
+                }
+            }
+            
+            ToolbarSpacer(.fixed, placement: .topBarTrailing)
+            
             ToolbarItemGroup(placement: .topBarTrailing) {
                     Button(action: { isShowingSearch = true }) {
                         Image(systemName: "line.3.horizontal.decrease")

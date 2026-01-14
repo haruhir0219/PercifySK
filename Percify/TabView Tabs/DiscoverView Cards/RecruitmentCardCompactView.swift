@@ -163,16 +163,22 @@ struct RecruitmentCardCompactView: View {
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.15), lineWidth: 1)
+                .strokeBorder(Color.white.opacity(0.45), lineWidth: 1.2)
         )
     }
     
     // MARK: - Badge
     
     private var badgePill: some View {
-        Text(recruitment.badgeText)
-            .font(.caption)
-            .fontWeight(.semibold)
+        HStack {
+            Image("LogoSmall")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 12, height: 12)
+            Text(recruitment.badgeText)
+                .font(.caption)
+                .fontWeight(.semibold)
+        }
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
             .background(
@@ -261,7 +267,7 @@ struct CompactCardButtonStyle: ButtonStyle {
         .padding()
     }
     .background(
-        LinearGradient(colors: [.indigo.opacity(0.6), .purple.opacity(0.2)], startPoint: .top, endPoint: .bottom)
+        LinearGradient(colors: [.white.opacity(0.6), .white.opacity(0.2)], startPoint: .top, endPoint: .bottom)
             .ignoresSafeArea()
     )
 }

@@ -1,5 +1,5 @@
 {
-  "originHash" : "85ecd5a7d485d106344e4c496b1b75c493cf44b024f9006efb67eb28ca980391",
+  "originHash" : "aa1c2934791ce8b9e13d386c7a5d91c7b352e290fe4399cd49b71d28fd90d7ef",
   "pins" : [
     {
       "identity" : "confettiswiftui",
@@ -8,6 +8,15 @@
       "state" : {
         "revision" : "9ae5bc2ce2149980884d4612321c3a266d6bf82c",
         "version" : "3.0.0"
+      }
+    },
+    {
+      "identity" : "glowgetter",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/Aeastr/GlowGetter",
+      "state" : {
+        "revision" : "b1e9372d49f4047ab8ff39ef6b9b8f56f47608b9",
+        "version" : "1.1.1"
       }
     },
     {

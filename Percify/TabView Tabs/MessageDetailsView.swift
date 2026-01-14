@@ -270,7 +270,7 @@ struct MessageDetailsView: View {
                                 .allowsHitTesting(true)
                                 .transition(.opacity)
                                 .ignoresSafeArea()
-                            Text("スカウトを承諾して\nメッセージを確認")
+                            Text("スカウトを開封して\nメッセージを確認")
                                 .font(.title)
                                 .fontWeight(.semibold)
                                 .foregroundColor(.secondary)
@@ -350,7 +350,7 @@ struct MessageDetailsView: View {
                             showTextField = true
                         }
                     }) {
-                        Text("スカウトを承諾")
+                        Text("スカウトを開封")
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)

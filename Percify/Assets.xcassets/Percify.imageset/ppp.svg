@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="386px" height="282px" viewBox="0 0 386 282" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <title>Group</title>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Group">
+            <g id="CR" transform="translate(101, 0)" fill="#3C3C43" fill-opacity="0.6">
+                <g id="Rectangle-2-Copy">
+                    <rect id="Rectangle-2-Copy-Copy-2" transform="translate(142.5398, 139.4809) rotate(-44) translate(-142.5398, -139.4809)" x="-7.96018827" y="91.4809475" width="301" height="96" rx="48"></rect>
+                </g>
+            </g>
+            <g id="Group" transform="translate(120.5, 162) rotate(1) translate(-120.5, -162)translate(3, 45)" fill="#000000">
+                <path d="M102.792864,34.0614134 L198.959387,130.227936 C199.545774,130.814323 200.113818,131.412107 200.663518,132.020576 C201.200934,132.499335 201.728006,132.996573 202.243645,133.512212 L234.770557,166.039124 L181.030442,219.77924 C173.219956,227.589726 160.556656,227.589726 152.74617,219.77924 L134.361394,201.394463 C133.845755,200.878824 133.348517,200.351753 132.86968,199.814064 C132.261307,199.264618 131.663523,198.696574 131.077136,198.110187 L34.9106134,101.943664 C16.1654474,83.1984984 16.1654474,52.8065794 34.9106134,34.0614134 C53.6557794,15.3162474 84.0476984,15.3162474 102.792864,34.0614134 Z" id="Combined-Shape-Copy-2"></path>
+            </g>
+        </g>
+    </g>
+</svg>

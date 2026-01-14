@@ -1,17 +1,17 @@
 {
   "images" : [
     {
-      "filename" : "skmf.svg",
+      "filename" : "ppp.svg",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "skmf 1.svg",
+      "filename" : "ppp 1.svg",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
-      "filename" : "skmf 2.svg",
+      "filename" : "ppp 2.svg",
       "idiom" : "universal",
       "scale" : "3x"
     }

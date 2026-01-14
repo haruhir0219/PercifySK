@@ -45,14 +45,14 @@
           "position" : {
             "scale" : 1,
             "translation-in-points" : [
-              0,
-              0
+              -6.0010747358819,
+              1.9170568585378192
             ]
           }
         }
       ],
       "position" : {
-        "scale" : 2,
+        "scale" : 2.2,
         "translation-in-points" : [
           -148.65405417245555,
           45.63140943632662
@@ -98,14 +98,14 @@
           "position" : {
             "scale" : 1,
             "translation-in-points" : [
-              -78.24388123465951,
-              -4.075777112975011
+              -67.57492029847606,
+              -3.1589463194160956
             ]
           }
         }
       ],
       "position" : {
-        "scale" : 2,
+        "scale" : 2.2,
         "translation-in-points" : [
           257.91840989541595,
           6.991597349194583
@@ -134,6 +134,17 @@
       "hidden" : false,
       "layers" : [
         {
+          "image-name" : "diva.png",
+          "name" : "diva",
+          "position" : {
+            "scale" : 0.95,
+            "translation-in-points" : [
+              -12.6599239730632,
+              -13.289606055492982
+            ]
+          }
+        },
+        {
           "fill-specializations" : [
             {
               "value" : {
@@ -146,6 +157,7 @@
             }
           ],
           "glass" : true,
+          "hidden" : true,
           "image-name" : "react.png",
           "name" : "react"
         }
@@ -183,6 +195,13 @@
           }
         }
       ],
+      "position" : {
+        "scale" : 1.1,
+        "translation-in-points" : [
+          0,
+          0
+        ]
+      },
       "shadow" : {
         "kind" : "neutral",
         "opacity" : 0.5

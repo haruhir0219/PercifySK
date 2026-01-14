@@ -22,15 +22,17 @@ struct SkippedListView: View {
                         Image(systemName: "xmark.circle")
                             .font(.system(size: 60))
                             .foregroundColor(.secondary)
-                        Text("スキップした求人はありません")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                        Text("興味のない求人を左にスワイプして\nスキップしましょう")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
+                        VStack(spacing: 3) {
+                            Text("スキップした求人はありません")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            Text("興味のない求人を左にスワイプして\nスキップできます。")
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 40)
+                        }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -53,7 +55,7 @@ struct SkippedListView: View {
                                             Label("スキップリストから削除", systemImage: "xmark.circle")
                                         }
                                     }
-                                    .shadow(color: Color.black.opacity(0.15), radius: 12, x: 0, y: 4)
+                                    //.shadow(color: Color.black.opacity(0.15), radius: 12, x: 0, y: 4)
                             }
                         }
                         .padding()
@@ -84,17 +86,20 @@ struct SkippedListView: View {
             }
             .safeAreaBar(edge: .bottom) {
                 Button(action: {
+                    withAnimation {
+                        jobStore.moveAllSkippedToLiked()
+                    }
                     dismiss()
                 }) {
-                    Text("\(jobStore.skippedJobs.count)件のスキップした求人")
+                    Text("\(jobStore.skippedJobs.count)件をお気に入りに移動")
                         .font(.headline)
                         .fontWeight(.semibold)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 10)
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                         .multilineTextAlignment(.center)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.glass)
                 .frame(width: UIScreen.main.bounds.width * 0.8)
                 .disabled(jobStore.skippedJobs.isEmpty)
             }

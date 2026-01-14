@@ -13,6 +13,7 @@ enum TabIdentifier: Hashable {
     case profile
     case discover
     case calendar
+    case percify
 }
 
 struct ContentView: View {
@@ -46,7 +47,7 @@ struct ContentView: View {
                 }
                 //.searchable(text: $searchText)
             } label: {
-                Label("さがす", systemImage: "square.stack.fill")
+                Label("さがす", systemImage: "rectangle.portrait.on.rectangle.portrait.angled.fill")
             }
             
             Tab(value: TabIdentifier.messages) {
@@ -54,7 +55,7 @@ struct ContentView: View {
                     MessagesView()
                 }
             } label: {
-                Label("メッセージ", systemImage: "message.fill")
+                Label("メッセージ", systemImage: "envelope.fill")
             }
             .badge(3)
 

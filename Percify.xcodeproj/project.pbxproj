@@ -10,6 +10,7 @@
 		C97DE7652EC457E700BDD8DB /* Glur in Frameworks */ = {isa = PBXBuildFile; productRef = C97DE7642EC457E700BDD8DB /* Glur */; };
 		C9892D522F0DC87B00855C6A /* ConfettiSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = C9892D512F0DC87B00855C6A /* ConfettiSwiftUI */; };
 		C9892D542F0E31C400855C6A /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C9892D532F0E31C400855C6A /* AppIcon.icon */; };
+		C9BD5E782F154EAF001E6604 /* GlowGetter in Frameworks */ = {isa = PBXBuildFile; productRef = C9BD5E772F154EAF001E6604 /* GlowGetter */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +44,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C9BD5E782F154EAF001E6604 /* GlowGetter in Frameworks */,
 				C9892D522F0DC87B00855C6A /* ConfettiSwiftUI in Frameworks */,
 				C97DE7652EC457E700BDD8DB /* Glur in Frameworks */,
 			);
@@ -90,6 +92,7 @@
 			packageProductDependencies = (
 				C97DE7642EC457E700BDD8DB /* Glur */,
 				C9892D512F0DC87B00855C6A /* ConfettiSwiftUI */,
+				C9BD5E772F154EAF001E6604 /* GlowGetter */,
 			);
 			productName = Percify;
 			productReference = C99603B82E94B85000066E4D /* Percify.app */;
@@ -123,6 +126,7 @@
 			packageReferences = (
 				C97DE7632EC457E700BDD8DB /* XCRemoteSwiftPackageReference "Glur" */,
 				C9892D502F0DC87B00855C6A /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */,
+				C9BD5E762F154EAF001E6604 /* XCRemoteSwiftPackageReference "GlowGetter" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C99603B92E94B85000066E4D /* Products */;
@@ -412,6 +416,14 @@
 				minimumVersion = 3.0.0;
 			};
 		};
+		C9BD5E762F154EAF001E6604 /* XCRemoteSwiftPackageReference "GlowGetter" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/Aeastr/GlowGetter";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.1.1;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -424,6 +436,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C9892D502F0DC87B00855C6A /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */;
 			productName = ConfettiSwiftUI;
+		};
+		C9BD5E772F154EAF001E6604 /* GlowGetter */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C9BD5E762F154EAF001E6604 /* XCRemoteSwiftPackageReference "GlowGetter" */;
+			productName = GlowGetter;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

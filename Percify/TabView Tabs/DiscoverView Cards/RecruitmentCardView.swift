@@ -1,5 +1,6 @@
 import SwiftUI
 import Charts
+import GlowGetter
 
 // MARK: - Visibility Preference Key
 
@@ -61,6 +62,7 @@ struct RecruitmentCardView: View {
     
     // Circle slide animation state
     @State private var circleOffset: CGFloat = 0
+    @State private var circleAnimationTask: Task<Void, Never>?
 
     // Haptic feedback generators
     private let impactLight = UIImpactFeedbackGenerator(style: .light)
@@ -197,9 +199,9 @@ struct RecruitmentCardView: View {
         }
         .clipShape(RoundedRectangle(cornerRadius: 32, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 32, style: .continuous)
-                .strokeBorder(Color.white.opacity(0.45), lineWidth: 1.2)
-        )
+                        RoundedRectangle(cornerRadius: 32, style: .continuous)
+                            .strokeBorder(.ultraThinMaterial, lineWidth: 1.2)
+                    )
         //.shadow(color: Color.black.opacity(1.8), radius: 4, x: 0, y: 24)
     }
     
@@ -241,7 +243,7 @@ struct RecruitmentCardView: View {
                     .clipShape(Capsule())
                     .overlay(
                         Capsule()
-                            .strokeBorder(Color.white.opacity(0.4), lineWidth: 1)
+                            .strokeBorder(Color.white.opacity(0.4), lineWidth: 0.5)
                     )
             )
             .foregroundStyle(.white)
@@ -391,10 +393,11 @@ struct RecruitmentCardView: View {
                         HStack(alignment: .bottom, spacing: 2) {
                             Text(recruitment.pay1Value)
                                 .fixedSize(horizontal: true, vertical: true)
-                                .font(.title)
-                                .fontWeight(.semibold)
+                                .font(.title) 
+                                .fontWeight(.heavy)
                             Text("万円")
-                                .font(Font.title3.bold())
+                                .font(.title3)
+                                .fontWeight(.heavy)
                                 .padding(.bottom, 3)
                         }
                         Text("000万円~")
@@ -418,9 +421,10 @@ struct RecruitmentCardView: View {
                             Text(recruitment.pay2Value)
                                 .fixedSize(horizontal: true, vertical: true)
                                 .font(.title)
-                                .fontWeight(.semibold)
+                                .fontWeight(.heavy)
                             Text("万円")
-                                .font(Font.title3.bold())
+                                .font(.title3)
+                                .fontWeight(.heavy)
                                 .padding(.bottom, 3)
                         }
                         Text("0000万円~")
@@ -548,23 +552,53 @@ struct RecruitmentCardView: View {
             VStack(alignment: .leading) {
                 HStack(alignment: .top) {
                     VStack {
-                        ZStack {
-                            Capsule()
-                                .fill(.ultraThinMaterial)
-                                .frame(width: 160, height: 40)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 32, style: .continuous)
-                                        .strokeBorder(Color.white.opacity(0.45), lineWidth: 1.2)
-                                )
-                                .padding()
-                            Circle()
-                                .fill(Color.white)
-                                .frame(width: 36, height: 36)
-                                .offset(x: circleOffset)
-                                .onAppear {
-                                    startCircleAnimation()
-                                }
+                        // Isolated container for the circle animation
+                        GeometryReader { geometry in
+                            ZStack {
+                                Capsule()
+                                    .fill(.ultraThinMaterial)
+                                    .frame(width: 160, height: 40)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 32, style: .continuous)
+                                            .fill(
+                                                LinearGradient(
+                                                    colors: [.clear, .white.opacity(0.7)],
+                                                    startPoint: .leading,
+                                                    endPoint: .trailing
+                                                )
+                                            )
+                                    )
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 32, style: .continuous)
+                                            .strokeBorder(Color.white.opacity(0.45), lineWidth: 1.2)
+                                    )
+                                
+                                Circle()
+                                    .fill(Color.white)
+                                    .clipShape(Circle())
+                                                .glow(0.8, Circle())
+                                    .frame(width: 36, height: 36)
+                                    .overlay(
+                                        Image(systemName: "arrow.right")
+                                            .font(.headline)
+                                            .fontWeight(.bold)
+                                            .foregroundColor(.clear)
+                                    )
+                                    .offset(x: circleOffset)
+                                    .id("likeCircle") // Unique ID to isolate animation state
+                            }
+                            .frame(width: 160, height: 40)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                         }
+                        .frame(width: 160, height: 40)
+                        .padding()
+                        .onAppear {
+                            startCircleAnimation()
+                        }
+                        .onDisappear {
+                            circleAnimationTask?.cancel()
+                        }
+                        
                         VStack(alignment: .center, spacing: 4) {
                             Text("右にフリックして完了")
                                 .font(.headline)
@@ -609,23 +643,50 @@ struct RecruitmentCardView: View {
             
             VStack {
                 VStack {
-                    ZStack {
-                        Capsule()
-                            .fill(.ultraThinMaterial)
-                            .frame(width: 160, height: 40)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 32, style: .continuous)
-                                    .strokeBorder(Color.white.opacity(0.45), lineWidth: 1.2)
-                            )
-                            .padding()
-                        Circle()
-                            .fill(Color.white)
-                            .frame(width: 36, height: 36)
-                            .offset(x: circleOffset)
-                            .onAppear {
-                                startCircleAnimation(reversed: true)
-                            }
+                    // Isolated container for the circle animation
+                    GeometryReader { geometry in
+                        ZStack {
+                            Capsule()
+                                .fill(.ultraThinMaterial)
+                                .frame(width: 160, height: 40)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 32, style: .continuous)
+                                        .fill(
+                                            LinearGradient(
+                                                colors: [.clear, .white.opacity(0.7)],
+                                                startPoint: .trailing,
+                                                endPoint: .leading
+                                            )
+                                        )
+                                        .strokeBorder(Color.white.opacity(0.45), lineWidth: 1.2)
+                                )
+                            
+                            Circle()
+                                .fill(Color.white)
+                                .clipShape(Circle())
+                                            .glow(0.8, Circle())
+                                .frame(width: 36, height: 36)
+                                .overlay(
+                                    Image(systemName: "arrow.left")
+                                        .font(.headline)
+                                        .fontWeight(.bold)
+                                        .foregroundColor(.clear)
+                                )
+                                .offset(x: circleOffset)
+                                .id("dislikeCircle") // Unique ID to isolate animation state
+                        }
+                        .frame(width: 160, height: 40)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     }
+                    .frame(width: 160, height: 40)
+                    .padding()
+                    .onAppear {
+                        startCircleAnimation(reversed: true)
+                    }
+                    .onDisappear {
+                        circleAnimationTask?.cancel()
+                    }
+                    
                     VStack(alignment: .center, spacing: 4) {
                         Text("左にフリックして完了")
                             .font(.headline)
@@ -717,6 +778,9 @@ struct RecruitmentCardView: View {
     // MARK: - Helper Functions
     
     private func startCircleAnimation(reversed: Bool = false) {
+        // Cancel any existing animation task
+        circleAnimationTask?.cancel()
+        
         // Calculate the distance the circle can travel
         // Capsule width is 160, circle diameter is 36
         // Maximum offset = (160 - 36) / 2 = 62
@@ -726,25 +790,38 @@ struct RecruitmentCardView: View {
         let startPosition = reversed ? maxOffset : -maxOffset
         let endPosition = reversed ? -maxOffset : maxOffset
         
-        // Start position
+        // Start position immediately without animation to prevent glitches
         circleOffset = startPosition
         
-        // Animate to end position with easeInOut, then spring back
-        withAnimation(.easeInOut(duration: 1.0)) {
-            circleOffset = endPosition
-        }
-        
-        // After reaching the end, spring back to the start and repeat
-        // Higher dampingFraction (0.75) prevents overshoot beyond the capsule edges
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+        // Create a new animation task
+        circleAnimationTask = Task { @MainActor in
+            // Small delay to ensure the view is ready
+            try? await Task.sleep(nanoseconds: 50_000_000) // 0.05 seconds
+            
+            guard !Task.isCancelled else { return }
+            
+            // Animate to end position with easeInOut
+            withAnimation(.easeInOut(duration: 1.0)) {
+                circleOffset = endPosition
+            }
+            
+            // Wait for animation to complete
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+            
+            guard !Task.isCancelled else { return }
+            
+            // Spring back to start with constrained animation
             withAnimation(.spring(response: 0.8, dampingFraction: 0.75)) {
                 circleOffset = startPosition
             }
             
-            // Schedule the next cycle
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                startCircleAnimation(reversed: reversed)
-            }
+            // Wait before next cycle
+            try? await Task.sleep(nanoseconds: 800_000_000) // 0.8 seconds
+            
+            guard !Task.isCancelled else { return }
+            
+            // Repeat the cycle
+            startCircleAnimation(reversed: reversed)
         }
     }
     

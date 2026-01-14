@@ -23,15 +23,17 @@ struct LikedListView: View {
                         Image(systemName: "heart.slash")
                             .font(.system(size: 60))
                             .foregroundColor(.secondary)
-                        Text("お気に入りはまだありません")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.primary)
-                        Text("気になる求人を右にスワイプして\nお気に入りに追加しましょう")
-                            .font(.body)
-                            .foregroundColor(.secondary)
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 40)
+                        VStack(spacing: 3) {
+                            Text("お気に入りはまだありません")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.primary)
+                            Text("気になる求人を右にスワイプして\nお気に入りに追加しましょう。")
+                                .font(.body)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal, 40)
+                        }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
@@ -66,7 +68,7 @@ struct LikedListView: View {
                                             Label("お気に入りから削除", systemImage: "heart.slash")
                                         }
                                     }
-                                    .shadow(color: Color.black.opacity(0.15), radius: 12, x: 0, y: 4)
+                                    //.shadow(color: Color.black.opacity(0.15), radius: 12, x: 0, y: 4)
                             }
                         }
                         .padding()
@@ -100,6 +102,7 @@ struct LikedListView: View {
                     } label: {
                         Image(systemName: "arrow.trianglehead.counterclockwise")
                             .foregroundColor(.red)
+                            .padding(.bottom, 2)
                     }
                     .disabled(jobStore.likedJobs.isEmpty && jobStore.skippedJobs.isEmpty)
                 }
