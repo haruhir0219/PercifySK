@@ -1,11 +1,8 @@
 //
-//  RecruitmentDetailsView.swift (UI-Only)
-//  Bybeit (Standalone UI)
-//  Created for UI-only preview & copy-paste use.
-//
 
 import SwiftUI
 import UIKit
+import Charts
 
 // MARK: - Simple helpers / stubs (replace with your real ones later if needed)
 
@@ -20,7 +17,7 @@ private var isMaxOrPlusIPhone: Bool {
 }
 
 /// Lightweight "glass" container using system materials (no dependencies)
-struct GlassEffectContainer<Content: View>: View {
+struct GlassEffectContainer2<Content: View>: View {
     let content: Content
     init(@ViewBuilder content: () -> Content) { self.content = content() }
     var body: some View {
@@ -29,17 +26,18 @@ struct GlassEffectContainer<Content: View>: View {
                 RoundedRectangle(cornerRadius: 32, style: .continuous)
                     .fill(.white)
             )
+            .drawingGroup()
     }
 }
 
 /// No-op but keeps call-sites intact
 extension View {
-    func glassEffect(_ style: Any? = nil, in shape: Any? = nil) -> some View { self }
+    func glassEffect2(_ style: Any? = nil, in shape: Any? = nil) -> some View { self }
 }
 
 /// Simple shimmering stand-in (remove if unwanted)
 extension View {
-    func shimmeringPlaceholder(_ active: Bool = true) -> some View {
+    func shimmeringPlaceholder2(_ active: Bool = true) -> some View {
         self
             .redacted(reason: active ? .placeholder : [])
             .opacity(active ? 0.9 : 1.0)
@@ -48,7 +46,7 @@ extension View {
 
 // MARK: - Job section kind (since original referenced an external type)
 
-enum JobSectionKind: CaseIterable, Hashable {
+enum JobSectionKind2: CaseIterable, Hashable {
     case top, qualification, description, salary, period, shift, weekdays, benefits, access, flowAfterApply
 
     var title: String {
@@ -95,9 +93,378 @@ enum JobSectionKind: CaseIterable, Hashable {
     }
 }
 
+// MARK: - Grid Cell Model
+
+struct SelectionStep {
+    let mainText: String
+    let subText: String?
+    
+    init(mainText: String, subText: String? = nil) {
+        self.mainText = mainText
+        self.subText = subText
+    }
+}
+
+// MARK: - Tags Flow Layout (extracted for performance)
+
+struct TagsFlowLayout: View, Equatable {
+    private let tags = ["フレックスタイム制あり", "ワーク・ライフバランス重視", "副業OK", "新規事業立ち上げ・事業開発"]
+    
+    static func == (lhs: TagsFlowLayout, rhs: TagsFlowLayout) -> Bool {
+        true // Static tags, always equal
+    }
+    
+    var body: some View {
+        FlowLayout(tags: tags) { tag in
+            Text("#" + tag.trimmingCharacters(in: .whitespaces))
+                .font(.caption)
+                .fontWeight(.semibold)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Color.accentColor.opacity(0.15))
+                .clipShape(Capsule())
+                .foregroundColor(.accentColor)
+        }
+    }
+}
+
+// MARK: - Info Row (extracted for performance)
+
+struct InfoRowView: View {
+    let icon: String
+    let label: String
+    let value: String
+    let iconLeadingPadding: CGFloat
+    let labelLeadingPadding: CGFloat
+    
+    init(icon: String, label: String, value: String, iconLeadingPadding: CGFloat = 0, labelLeadingPadding: CGFloat = 0) {
+        self.icon = icon
+        self.label = label
+        self.value = value
+        self.iconLeadingPadding = iconLeadingPadding
+        self.labelLeadingPadding = labelLeadingPadding
+    }
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon).foregroundStyle(Color.secondary)
+                .font(.caption)
+                .padding(.leading, iconLeadingPadding)
+            Text(label).foregroundStyle(.secondary).fontWeight(.semibold).font(.caption)
+                .padding(.leading, labelLeadingPadding)
+            Text(value).foregroundStyle(.secondary).font(.caption)
+        }
+        .padding(.horizontal)
+    }
+}
+
+// MARK: - Salary Chart View (extracted for performance)
+
+struct SalaryChartView: View, Equatable {
+    let chartData: [Double]
+    let animateChart: Bool
+    
+    static func == (lhs: SalaryChartView, rhs: SalaryChartView) -> Bool {
+        lhs.animateChart == rhs.animateChart && lhs.chartData.count == rhs.chartData.count
+    }
+    
+    var body: some View {
+        Chart {
+            ForEach(Array(chartData.enumerated()), id: \.offset) { index, value in
+                LineMark(
+                    x: .value("Index", index),
+                    y: .value("Value", animateChart ? value : 0)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [Color.accentColor.opacity(0.4), Color.accentColor.opacity(0.1)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .interpolationMethod(.catmullRom)
+                .lineStyle(StrokeStyle(lineWidth: 2.5))
+                
+                AreaMark(
+                    x: .value("Index", index),
+                    y: .value("Value", animateChart ? value : 0)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [Color.accentColor.opacity(0.15), Color.accentColor.opacity(0.00)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .interpolationMethod(.catmullRom)
+            }
+        }
+        .chartXAxis(.hidden)
+        .chartYAxis(.hidden)
+        .chartYScale(domain: 0...100)
+        .frame(height: 100)
+        .padding(.horizontal, -10)
+        .mask(
+            LinearGradient(
+                colors: [.clear, .black, .black, .black, .clear],
+                startPoint: .leading,
+                endPoint: .trailing
+            )
+        )
+        .allowsHitTesting(false)
+    }
+}
+
+// MARK: - Event Info List Sections (extracted for performance)
+
+struct EventOverviewSection: View, Equatable {
+    static func == (lhs: EventOverviewSection, rhs: EventOverviewSection) -> Bool {
+        true // Static content
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "document")
+                    .foregroundColor(.secondary)
+                Text("概要")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+            }
+            Text("""
+                金融×ITの上場コンサル「Solvvy(ソルヴィー)」で、自分発のキャリアを描いてみませんか？
+                
+                Solvvyが今、本気で出会いたいのは——
+                若いうちから裁量を持ち、チャレンジできる環境に身を置きたい。
+                安定だけではなく、自ら成長のきっかけを掴みにいきたい。
+                将来は経営や起業にも挑戦してみたい。
+                ——そんな熱を持った学生の方です。
+                
+                「でも、まだやりたいことが明確に決まっているわけじゃない…」
+                「自分にコンサルが合っているのかもわからない…」
+                もちろん、それで大丈夫です。
+                
+                Solvvyでは、入社前から完璧である必要はありません。
+                私たちが重視しているのは、"これから"の可能性です。
+                堅苦しい準備も不要。こちらからの一方的な時間ではなく、
+                あなたが気になることに丁寧に向き合う「対話の時間」にしたいと考えています。
+                
+                少しでもSolvvyに興味を持っていただけたら、お気軽にエントリーをしてください。
+                あなたの「これから」にとって、少しでもヒントになる時間になればうれしいです！
+                お会いできるのを楽しみにしています！
+                """)
+            .font(.subheadline)
+            .foregroundColor(.primary)
+        }
+        .padding()
+        .padding(.vertical, 4)
+    }
+}
+
+struct SelectionFlowSection: View {
+    let generalSteps: [SelectionStep]
+    let percifySteps: [SelectionStep]
+    @Binding var showApplySheet: Bool
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 36) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("ライバルよりも\n一歩先に、夢の企業へ。\nPercify特別選考なら。")
+                    .font(.title)
+                    .foregroundColor(.white)
+                    .fontWeight(.bold)
+                Text("完全審査制だからこそできる、Percify就活アプリからのみの限定。")
+                    .font(.subheadline)
+                    .foregroundColor(.white)
+            }
+            HStack(alignment: .top, spacing: 12) {
+                VStack(spacing: 12) {
+                    Text("一般選考")
+                        .font(.headline)
+                        .fontWeight(.regular)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    ForEach(Array(generalSteps.enumerated()), id: \.offset) { index, step in
+                        SelectionStepCard(
+                            stepNumber: index + 1,
+                            mainText: step.mainText,
+                            subText: step.subText
+                        )
+                    }
+                }
+                VStack(spacing: 12) {
+                    Text("Percify")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    ForEach(0..<5, id: \.self) { index in
+                        if index < percifySteps.count {
+                            SelectionStepCard(
+                                stepNumber: index + 1,
+                                mainText: percifySteps[index].mainText,
+                                subText: percifySteps[index].subText
+                            )
+                        } else {
+                            RoundedRectangle(cornerRadius: 16)
+                                .fill(.ultraThinMaterial)
+                                .opacity(0)
+                                .frame(height: 75)
+                        }
+                    }
+                }
+            }
+            Button(action: {
+                showApplySheet = true
+            }) {
+                Text("今すぐ使ってエントリー")
+                    .font(.headline)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.all, 8)
+            }
+            .buttonStyle(.glassProminent)
+            .padding(.top, 12)
+        }
+        .listRowBackground(
+            AnimatedMeshGradientBackground()
+        )
+        .padding()
+        .padding(.vertical, 4)
+    }
+}
+
+struct EventRecommendedPersonSection: View, Equatable {
+    static func == (lhs: EventRecommendedPersonSection, rhs: EventRecommendedPersonSection) -> Bool {
+        true // Static content
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "person.2")
+                    .foregroundColor(.secondary)
+                Text("こんな人におすすめ")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+            }
+            Text("""
+            ・自ら考え行動することが好きな人
+            ・アイデアで価値を生み出したい人
+            ・若いうちから責任ある仕事を任されたい人
+            ・社会課題の解決に関心がある人
+            ・柔軟な思考力と変化対応力に自信がある人
+            ・チームでの協働を大切にする人
+            """)
+            .font(.subheadline)
+            .foregroundColor(.primary)
+        }
+        .padding()
+        .padding(.vertical, 4)
+    }
+}
+
+struct EventVenueSection: View, Equatable {
+    static func == (lhs: EventVenueSection, rhs: EventVenueSection) -> Bool {
+        true // Static content
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "map")
+                    .foregroundColor(.secondary)
+                Text("会場")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+            }
+            Text("""
+            東京本社
+            〒160-0023 東京都新宿区西新宿4-33-4
+            Tel 03-6276-0401 / FAX 03-6893-6684
+            """)
+            .font(.subheadline)
+            .foregroundColor(.primary)
+        }
+        .padding()
+        .padding(.vertical, 4)
+    }
+}
+
+struct EventCapacitySection: View, Equatable {
+    static func == (lhs: EventCapacitySection, rhs: EventCapacitySection) -> Bool {
+        true // Static content
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "exclamationmark.circle")
+                    .foregroundColor(.secondary)
+                Text("定員")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+            }
+            Text("""
+            10若干名
+            定員に達し次第、予告なく募集を停止させていただくことがありますので、ご承知おきください。
+            """)
+            .font(.subheadline)
+            .foregroundColor(.primary)
+        }
+        .padding()
+        .padding(.vertical, 4)
+    }
+}
+
+// MARK: - Selection Step Card (extracted for performance)
+
+struct SelectionStepCard: View {
+    let stepNumber: Int
+    let mainText: String
+    let subText: String?
+    
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            RoundedRectangle(cornerRadius: 16)
+                .fill(.ultraThinMaterial)
+                .opacity(0.4)
+                .frame(height: 75)
+            
+            // Step number - top left
+            Text("ステップ \(stepNumber)")
+                .font(.caption2)
+                .fontWeight(.bold)
+                .foregroundColor(.white.opacity(0.8))
+                .padding(12)
+            
+            // Content - bottom center
+            VStack {
+                Spacer()
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(mainText)
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.white)
+                        .multilineTextAlignment(.leading)
+                    if let subText = subText {
+                        Text(subText)
+                            .font(.caption2)
+                            .fontWeight(.regular)
+                            .foregroundColor(.white.opacity(0.7))
+                            .multilineTextAlignment(.leading)
+                    }
+                }
+                .padding(12)
+            }
+        }
+    }
+}
+
 // MARK: - Main View (UI-only)
 
-struct RecruitmentDetailsView: View {
+struct EventDetailsView: View {
 
     // Keep this constant simple & robust (no device model lookups)
     private var deviceCornerRadius: CGFloat { 46.0 }
@@ -111,9 +478,50 @@ struct RecruitmentDetailsView: View {
     @State private var hasApplied = false // purely local UI state
     @State private var selectedTab = "なにをやっているのか"
     @State private var selectedJobCategory = "IT職"
+    @State private var animateChart = false
+    @State private var gradientOffset: CGFloat = 0
+    @State private var showRecruitmentDetails = false
+    
+    // Individually addressable content for each cell
+    private let generalSelectionSteps: [SelectionStep] = [
+        SelectionStep(mainText: "エントリーシート", subText: "書類の提出が必要"),
+        SelectionStep(mainText: "ディスカッション", subText: "グループで実施"),
+        SelectionStep(mainText: "一次面接", subText: "現場社員による"),
+        SelectionStep(mainText: "二次面接", subText: "人事による"),
+        SelectionStep(mainText: "最終面接", subText: "役員による")
+    ]
+    
+    private let percifySelectionSteps: [SelectionStep] = [
+        SelectionStep(mainText: "ディスカッション", subText: "グループで実施"),
+        SelectionStep(mainText: "一次面接", subText: "現場社員による"),
+        SelectionStep(mainText: "二次面接", subText: "人事＋社員座談会"),
+        SelectionStep(mainText: "最終面接", subText: "役員による")
+    ]
+    
+    // Chart data for projected salary background - initialized once with random values
+    private let chartData: [Double] = {
+        let numberOfPoints = 14
+        let startValue: Double = 25.0
+        let endValue: Double = 85.0
+        let increment = (endValue - startValue) / Double(numberOfPoints - 1)
+        
+        // Generate random values once at initialization
+        var values: [Double] = []
+        for index in 0..<numberOfPoints {
+            let baseValue = startValue + (increment * Double(index))
+            // Add small random fluctuation (±3 points)
+            let fluctuation = Double.random(in: -3...3)
+            values.append(max(startValue, min(endValue, baseValue + fluctuation)))
+        }
+        return values
+    }()
     
     // Cache screen width to avoid repeated lookups
     private let screenWidth = UIScreen.main.bounds.width
+    
+    // Cache feedback generator to avoid creating new instances
+    private let lightFeedback = UIImpactFeedbackGenerator(style: .light)
+    private let mediumFeedback = UIImpactFeedbackGenerator(style: .medium)
 
     let jobID: String
     let imageURL: URL?
@@ -138,7 +546,8 @@ struct RecruitmentDetailsView: View {
 
     private var placeholderOverview: String {
         """
-        Solvvy（ソルヴィー）株式会社は、旧日本リビング保証が2024年11月にメディアシークと経営統合して誕生した、ストックビジネス創出支援を行うコンサルティングファームです。住宅・不動産領域を中心に、アフターサービスの仕組み化や保証サービスを提供し、顧客のストック型ビジネス（継続収益）への転換を包括的にサポートしています。
+        【概要（プレースホルダー）】
+        ここに求人の概要説明が入ります。ポジションの魅力、求める人物像、働く環境などを簡潔に記載してください。
         """
     }
 
@@ -159,125 +568,105 @@ struct RecruitmentDetailsView: View {
     @ViewBuilder
     private func infoRowsView() -> some View {
         VStack(alignment: .leading, spacing: 6) {
-            infoRow1
-            infoRow2
-            infoRow3
-            infoRow4
-            infoRow5
-            infoRow6
-            infoRow7
-            infoRow8
-            infoRow9
+            InfoRowView(icon: "building.2.fill", label: "会社名:", value: businessName)
+            InfoRowView(icon: "safari.fill", label: "会社HP:", value: "www.orientalland.co.jp")
+            InfoRowView(icon: "calendar", label: "設立年月:", value: "1960年7月11日")
+            InfoRowView(icon: "map.fill", label: "本社住所:", value: "〒279-8511 千葉県浦安市美浜1丁目8番1号", labelLeadingPadding: -0.5)
+            InfoRowView(icon: "yensign.bank.building.fill", label: "上場区分:", value: "東京証券取引所 プライム市場（証券コード：4661）", labelLeadingPadding: -1)
+            InfoRowView(icon: "person.2.fill", label: "従業員数:", value: "約5,800名", iconLeadingPadding: -1, labelLeadingPadding: -2)
+            InfoRowView(icon: "globe.asia.australia.fill", label: "事業内容:", value: "東京ディズニーリゾートの開発・運営", iconLeadingPadding: 1, labelLeadingPadding: 1)
+            InfoRowView(icon: "person.fill", label: "代表者名:", value: "高橋 渉", iconLeadingPadding: 2, labelLeadingPadding: 1)
+            InfoRowView(icon: "star.fill", label: "業種:", value: "ホスピタリティ・ツーリズム", iconLeadingPadding: 1)
         }
     }
     
-    private var infoRow1: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "building.2.fill").foregroundStyle(Color.secondary)
-                .font(.caption)
-            Text("会社名:").foregroundStyle(.secondary).fontWeight(.semibold).font(.caption)
-            Text(businessName).foregroundStyle(.secondary).font(.caption)
+    @ViewBuilder
+    private func projectedSalaryView() -> some View {
+        ZStack {
+            // Chart background - wrapped for performance
+            SalaryChartView(chartData: chartData, animateChart: animateChart)
+            
+            // Content on top
+            HStack(alignment: .firstTextBaseline, spacing: 0) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("新卒年収")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .padding(.bottom, -4)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(alignment: .bottom, spacing: 2) {
+                            Text("320")
+                                .fixedSize(horizontal: true, vertical: true)
+                                .font(.title)
+                                .fontWeight(.heavy)
+                            Text("万円")
+                                .font(.title3)
+                                .fontWeight(.heavy)
+                                .padding(.bottom, 3)
+                        }
+                        Text("000万円~")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                Image("Arrow")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 40)
+                    .offset(y: 35)
+                    .opacity(0.3)
+                Spacer()
+                VStack(alignment: .trailing, spacing: 6) {
+                    Text("30歳年収")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .padding(.bottom, -4)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        HStack(alignment: .bottom, spacing: 2) {
+                            Text("1,120")
+                                .fixedSize(horizontal: true, vertical: true)
+                                .font(.title)
+                                .fontWeight(.heavy)
+                            Text("万円")
+                                .font(.title3)
+                                .fontWeight(.heavy)
+                                .padding(.bottom, 3)
+                        }
+                        Text("0,000万円~")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 10)
         }
-        .padding(.horizontal)
-    }
-    
-    private var infoRow2: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "safari.fill").foregroundStyle(Color.secondary)
-                .font(.caption)
-            Text("会社HP:").foregroundStyle(.secondary).fontWeight(.semibold).font(.caption)
-            Text("https://solvvy.co.jp/").foregroundStyle(.secondary).font(.caption)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.0)) {
+                animateChart = true
+            }
         }
-        .padding(.horizontal)
     }
-    
-    private var infoRow3: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "calendar").foregroundStyle(Color.secondary)
-                .font(.caption)
-            Text("設立年月:").foregroundStyle(.secondary).fontWeight(.semibold).font(.caption)
-            Text("2009年3月").foregroundStyle(.secondary).font(.caption)
-        }
-        .padding(.horizontal)
-    }
-    
-    private var infoRow4: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "map.fill").foregroundStyle(Color.secondary)
-                .font(.caption)
-            Text("本社住所:").foregroundStyle(.secondary).fontWeight(.semibold).font(.caption)
-                .padding(.leading, -0.5)
-            Text("東京本社 〒160-0023 東京都新宿区西新宿4-33-4").foregroundStyle(.secondary).font(.caption)
-        }
-        .padding(.horizontal)
-    }
-    
-    private var infoRow5: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "yensign.bank.building.fill").foregroundStyle(Color.secondary)
-                .font(.caption)
-            Text("上場区分:").foregroundStyle(.secondary).fontWeight(.semibold).font(.caption)
-                .padding(.leading, -1)
-            Text("東京証券取引所グロース市場（7320）").foregroundStyle(.secondary).font(.caption)
-        }
-        .padding(.horizontal)
-    }
-    
-    private var infoRow6: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "person.2.fill").foregroundStyle(Color.secondary)
-                .font(.caption)
-                .padding(.leading, -1)
-            Text("従業員数:").foregroundStyle(.secondary).fontWeight(.semibold).font(.caption)
-                .padding(.leading, -2)
-            Text("約400名").foregroundStyle(.secondary).font(.caption)
-        }
-        .padding(.horizontal)
-    }
-    
-    private var infoRow7: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "globe.asia.australia.fill").foregroundStyle(Color.secondary)
-                .font(.caption)
-                .padding(.leading, 1)
-            Text("事業内容:").foregroundStyle(.secondary).fontWeight(.semibold).font(.caption)
-                .padding(.leading, 1)
-            Text("アフターサービスを起点とした「ストックビジネスコンサルティング」").foregroundStyle(.secondary).font(.caption)
-        }
-        .padding(.horizontal)
-    }
-    
-    private var infoRow8: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "person.fill").foregroundStyle(Color.secondary)
-                .font(.caption)
-                .padding(.leading, 2)
-            Text("代表者名:").foregroundStyle(.secondary).fontWeight(.semibold).font(.caption)
-                .padding(.leading, 1)
-            Text("安達 慶高").foregroundStyle(.secondary).font(.caption)
-        }
-        .padding(.horizontal)
-    }
-    
-    private var infoRow9: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "star.fill").foregroundStyle(Color.secondary)
-                .font(.caption)
-                .padding(.leading, 1)
-            Text("業種:").foregroundStyle(.secondary).fontWeight(.semibold).font(.caption)
-            Text("金融・コンサルティング").foregroundStyle(.secondary).font(.caption)
-        }
-        .padding(.horizontal)
-    }
+
         
         @ViewBuilder
         private func overviewView() -> some View {
             VStack(alignment: .leading) {
-                 Text(placeholderOverview)
+                HStack(spacing: 6) {
+                    Image(systemName: "info.circle.fill").foregroundStyle(Color.secondary)
+                        .font(.caption)
+                    Text("概要:").foregroundStyle(Color.secondary).fontWeight(.semibold).font(.caption)
+                        .padding(.leading, 0.8)
+                }
+                .padding(.horizontal)
+                .padding(.leading, 2)
+                
+                Text(placeholderOverview)
                     .foregroundColor(Color.secondary)
                     .fixedSize(horizontal: false, vertical: true)
                     .lineLimit(nil)
-                    .font(.subheadline)
+                    .font(.caption)
                     .padding(.horizontal)
             }
             .padding(.top, -6)
@@ -294,21 +683,119 @@ struct RecruitmentDetailsView: View {
                     .font(.body)
                     .frame(width: 54, alignment: .topLeading)
 
-                FlowLayout(tags: ["フレックスタイム制あり", "ワーク・ライフバランス重視", "副業OK", "新規事業立ち上げ・事業開発"]) { tag in
-                    Text("#" + tag.trimmingCharacters(in: .whitespaces))
-                        .font(.caption)
-                        .fontWeight(.semibold)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
-                        .background(Color.accentColor.opacity(0.15))
-                        .clipShape(Capsule())
-                        .foregroundColor(.accentColor)
-                }
-                .padding(.top, 8)
-                .padding(.leading, -33)
+                TagsFlowLayout()
+                    .padding(.top, 8)
+                    .padding(.leading, -33)
             }
         }
         .padding(.horizontal)
+    }
+    
+    @ViewBuilder
+    private func eventInfoListView() -> some View {
+        VStack {
+            HStack(alignment: .top, spacing: 6) {
+                Image(systemName: "plus.circle").foregroundStyle(Color.secondary)
+                Text("追加情報")
+                    .foregroundStyle(Color.secondary)
+                    .fontWeight(.semibold)
+                    .font(.body)
+                    //.padding(.top, -1)
+            }
+            .padding(.horizontal)
+        }
+        List {
+            Section {
+                EventOverviewSection()
+            }
+            Section {
+                SelectionFlowSection(
+                    generalSteps: generalSelectionSteps,
+                    percifySteps: percifySelectionSteps,
+                    showApplySheet: $showApplySheet
+                )
+            }
+            Section {
+                EventRecommendedPersonSection()
+            }
+            Section {
+                EventVenueSection()
+            }
+            Section {
+                EventCapacitySection()
+            }
+        }
+        .padding(.top, -30)
+        .scrollDisabled(true)
+        .listSectionSpacing(.compact)
+        .scrollContentBackground(.hidden)
+        .background(Color.clear)
+        .frame(minHeight: 2220)
+        .padding(.bottom, -200)
+    }
+    
+    @ViewBuilder
+    private func scheduleCarouselView() -> some View {
+        scheduleCarouselItem(index: 0)
+    }
+    
+    @ViewBuilder
+    private func scheduleCarouselItem(index: Int) -> some View {
+        VStack {
+            HStack(alignment: .top, spacing: 6) {
+                Image(systemName: "calendar").foregroundStyle(Color.secondary)
+                Text("日程")
+                    .foregroundStyle(Color.secondary)
+                    .fontWeight(.semibold)
+                    .font(.body)
+                    //.frame(width: 54, alignment: .topLeading)
+                    .padding(.top, -1)
+                Spacer()
+            }
+            .padding(.horizontal)
+            List {
+                HStack {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("3月15日")
+                            .font(.headline)
+                        Text("新宿本社オフィス")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    HStack {
+                        Image(systemName: "clock")
+                        Text("あと14日")
+                    }
+                }
+                HStack {
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("3月27日")
+                            .font(.headline)
+                        Text("新宿本社オフィス")
+                            .font(.subheadline)
+                            .foregroundColor(.secondary)
+                    }
+                    Spacer()
+                    HStack {
+                        Image(systemName: "clock")
+                        Text("あと28日")
+                    }
+                }
+            }
+            .frame(minHeight: 185)
+            .padding(.top, -30)
+            .scrollDisabled(true)
+            .scrollContentBackground(.hidden)
+            .background(Color.clear)
+        }
+    }
+    
+    private var scheduleImagePlaceholder: some View {
+        RoundedRectangle(cornerRadius: 0, style: .continuous)
+            .fill(Color.secondary.opacity(0.15))
+            .frame(width: 200, height: 112.5)
+            .shimmering()
     }
     
     @ViewBuilder
@@ -359,15 +846,13 @@ struct RecruitmentDetailsView: View {
                         RoundedRectangle(cornerRadius: 22, style: .continuous)
                             .stroke(Color.secondary.opacity(0.2), lineWidth: 0.5)
                     )
-            case .empty:
-                carouselPlaceholder
-            case .failure:
+            case .empty, .failure:
                 carouselPlaceholder
             @unknown default:
                 carouselPlaceholder
             }
         }
-        .task(priority: .utility) {
+        .task(priority: .low) {
             // Limit loading priority to reduce concurrent load
         }
     }
@@ -384,9 +869,7 @@ struct RecruitmentDetailsView: View {
             //)
     }
 
-    private var allTabs: [String] {
-        ["なにをやっているのか", "特別選考ルート", "仕事内容", "給与", "勤務時間、休日", "勤務地、転勤", "福利厚生", "選考ポイント", "同じ企業から"]
-    }
+    private let allTabs: [String] = ["なにをやっているのか", "特別選考ルート", "仕事内容", "給与", "勤務時間、休日", "勤務地、転勤", "福利厚生", "選考ポイント", "同じ企業から"]
     
     @ViewBuilder
     private func tabPickerView() -> some View {
@@ -442,7 +925,7 @@ struct RecruitmentDetailsView: View {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
             selectedTab = tab
         }
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        lightFeedback.impactOccurred()
     }
     
     @ViewBuilder
@@ -516,12 +999,12 @@ struct RecruitmentDetailsView: View {
         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
             selectedTab = tabs[newIndex]
         }
-        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        lightFeedback.impactOccurred()
     }
     
     private func handleTabChange(from oldValue: String, to newValue: String) {
         if oldValue != newValue {
-            UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            lightFeedback.impactOccurred()
         }
     }
     
@@ -607,7 +1090,7 @@ struct RecruitmentDetailsView: View {
         VStack(alignment: .leading, spacing: 16) {
             GlassEffectContainer {
                 VStack {
-                    AsyncImage(url: URL(string: "https://recruit.solvvy.co.jp/wp-content/themes/solvvy-recruit/assets/images/hero/newgraduate-pc.png")) { phase in
+                    AsyncImage(url: URL(string: "https://www.recruit.olc.co.jp/person/images/interview01/photo-visual.jpg")) { phase in
                         switch phase {
                         case .success(let image):
                             image
@@ -640,7 +1123,7 @@ struct RecruitmentDetailsView: View {
                         Text("なにをやっているのか")
                             .font(.title2)
                             .fontWeight(.bold)
-                        Text("Solvvy（ソルヴィー）株式会社は、旧日本リビング保証が2024年11月にメディアシークと経営統合して誕生した、ストックビジネス創出支援を行うコンサルティングファームです。住宅・不動産領域を中心に、アフターサービスの仕組み化や保証サービスを提供し、顧客のストック型ビジネス（継続収益）への転換を包括的にサポートしています。")
+                        Text("弊社オリエンタルランド（OLC）は、東京ディズニーリゾート（TDR）を経営・運営する会社で、ディズニーのライセンスを受け、テーマパーク（ランド・シー）、ホテル、商業施設などを運営し、「夢と魔法」を提供しています。\n事業は単なるテーマパーク運営に留まらず、広告、物流、インフラ、商品開発、エンターテイメントなど多岐にわたり、「心の活力創造事業」を通じて人々に感動を提供することを使命としています。﻿")
                             .font(.body)
                             .foregroundColor(.secondary)
                             .padding(.vertical, 4)
@@ -1326,25 +1809,33 @@ struct RecruitmentDetailsView: View {
         .padding(.top, 15)
     }
 
-    @ViewBuilder
+    @ViewBuilder//HERE IS THE WHOLE LAYOUT!!!
     private func mainDetails() -> some View {
         HStack(alignment: .top, spacing: 24) {
             VStack(alignment: .leading, spacing: 12) {
-                overviewView()
-                infoRowsView()
-                //overviewView()
-                tagsView()
-                imageCarouselView()
-                    .padding(.top, 4)
+                projectedSalaryView()
+                    .padding()
                 Divider()
                     .padding(.horizontal)
-                    .padding(.top, 10)
-                    .padding(.bottom, 8)
-                tabPickerView()
-                    .padding(.top, -5)
+                    .padding(.top, -20)
+                HStack(alignment: .top, spacing: 6) {
+                    Image(systemName: "info.circle").foregroundStyle(Color.secondary)
+                    Text("このイベントについて")
+                        .foregroundStyle(Color.secondary)
+                        .fontWeight(.semibold)
+                        .font(.body)
+                        .padding(.top, -1)
+                }
+                .padding(.horizontal)
+                titleText
+                    .padding(.bottom, 5)
+                    .padding(.top, 55)
+                scheduleCarouselView()
+                    .padding(.bottom, 20)
+                eventInfoListView()
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            //.padding(.bottom, 162)
+            .offset(y: -130)
         }
     }
 
@@ -1449,7 +1940,7 @@ struct RecruitmentDetailsView: View {
     private var favoriteButton: some View {
         Button {
             isFavorited.toggle()
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            mediumFeedback.impactOccurred()
         } label: {
             Image(systemName: isFavorited ? "heart.fill" : "heart")
                 .font(.title2)
@@ -1464,7 +1955,7 @@ struct RecruitmentDetailsView: View {
     
     private var applyButton: some View {
         Button {
-            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            mediumFeedback.impactOccurred()
             if hasApplied { showAppliedSheet = true } else { showApplySheet = true }
         } label: {
             Text(hasApplied ? "進捗を確認" : "今すぐ応募")
@@ -1486,7 +1977,16 @@ struct RecruitmentDetailsView: View {
     private var mainScrollView: some View {
         ScrollView {
             VStack {
-                ParallaxHeaderView(imageURL: imageURL, height: 170)
+                ParallaxHeaderView(imageURL: imageURL, height: 230)
+                    .overlay(alignment: .bottom) {
+                        VariableBlurView(maxBlurRadius: 16, direction: .blurredBottomClearTop)
+                            .frame(height: 100)
+                    }.ignoresSafeArea()
+                    .overlay(
+                        LinearGradient(colors: [Color.clear, Color.clear, Color(UIColor.systemGroupedBackground)],
+                                                startPoint: .top,
+                                                endPoint: .bottom
+                                            ))
                 companyHeaderSection
                 mainDetails()
                 Spacer()
@@ -1500,29 +2000,92 @@ struct RecruitmentDetailsView: View {
         VStack {
             companyLogoRow
             VStack(alignment: .leading, spacing: 16) {
-                //titleText
-                Text(businessName)
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .padding(.top)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal)
-                    //.padding(.bottom, 10)
-                    .padding(.top, -70)
             }
         }
     }
     
     private var companyLogoRow: some View {
         HStack {
-            Image(companyLogo)
-                .resizable()
-                .scaledToFill()
-                .frame(width: 100, height: 100)
-                .clipShape(Circle())
-                .offset(x: 0, y: -60)
-                .padding(.leading, 10)
-            Spacer()
+            Button {
+                showRecruitmentDetails = true
+            } label: {
+                HStack {
+                    Image(companyLogo)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: 80, height: 80)
+                        .clipShape(Circle())
+                        .overlay(
+                            Circle()
+                                .stroke(Color.gray.opacity(0.25), lineWidth: 0.15)
+                        )
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("コンサルティング・金融")
+                            .font(.caption)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .foregroundColor(.primary)
+                            .padding(.bottom, -2)
+                        Text(String(businessName.prefix(15)))
+                            .font(.title2)
+                            .fontWeight(.bold)
+                            .fixedSize(horizontal: true, vertical: false)
+                            .lineLimit(1)
+                        HStack {
+                            Image("LogoSmall")
+                                .resizable()
+                                .colorMultiply(.purple)
+                                .scaledToFit()
+                                .frame(width: 14, height: 25)
+                            Text("Percify特別選考ルートがあります")
+                                .fixedSize(horizontal: true, vertical: false)
+                                .font(.caption2)
+                                .foregroundColor(.purple)
+                        }
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 1)
+                        .background(Color.purple.opacity(0.15))
+                        .clipShape(Capsule())
+                        .padding(.top, 4)
+                    }
+                    .padding(.leading, 6)
+                    Spacer()
+                    Image(systemName: "chevron.right")
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary.opacity(0.6))
+                }
+            }
+            .buttonStyle(.plain)
+            .padding()
+            .glassEffect(.clear.interactive(), in: RoundedRectangle(cornerRadius: 44))
+            .shadow(
+                            color: Color.black.opacity(0.1), // Use opacity for a softer look
+                            radius: 12,                     // Large radius for a soft blur
+                            x: 0,                           // No horizontal offset
+                            y: 3                           // Slight vertical offset for a "lifted" look
+                        )
+            .padding(.all, 6)
+            .offset(x: 0, y: -110)
+            .padding(.horizontal, 9)
+            .frame(maxWidth: UIScreen.main.bounds.width * 1.0, alignment: .center)
+            .fullScreenCover(isPresented: $showRecruitmentDetails) {
+                NavigationStack {
+                    RecruitmentDetailsView(
+                        jobID: jobID,
+                        imageURL: imageURL,
+                        eikenRequired: eikenRequired,
+                        toeicRequired: toeicRequired,
+                        companyLogo: companyLogo,
+                        title: title,
+                        businessName: businessName,
+                        stationName: stationName,
+                        jobDuration: jobDuration,
+                        roleKind: roleKind,
+                        payHourly: payHourly,
+                        payAdded: payAdded
+                    )
+                }
+            }
+            //Spacer()
         }
     }
     
@@ -1554,14 +2117,23 @@ struct RecruitmentDetailsView: View {
     }
     
     private var titleText: some View {
-        Text(title)
-            .font(.title)
-            .fontWeight(.bold)
-            .padding(.top)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal)
-            .padding(.bottom, 10)
-            .padding(.top, -70)
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
+                .font(.title2)
+                .fontWeight(.bold)
+                .padding(.top)
+            Text("イベント種別: インターン")
+                .font(.headline)
+                .foregroundColor(.accentColor)
+                .padding(.horizontal, 8)
+                .padding(.all, 6)
+                .background(Color.purple.opacity(0.15))
+                .clipShape(Capsule())
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal)
+        .padding(.bottom, 16)
+        .padding(.top, -70)
     }
     
     private var topOverlayGradient: some View {
@@ -1583,12 +2155,23 @@ struct RecruitmentDetailsView: View {
         ToolbarItem(placement: .topBarLeading) {
             leadingToolbarButton
         }
-        //ToolbarItem(placement: .topBarTrailing) {
-            //trailingToolbarButton
-        //}
-        //ToolbarItemGroup(placement: .bottomBar) {
-            //bottomToolbarGroup
-        //}
+        ToolbarItem(placement: .topBarTrailing) {
+            Button {
+                // Open company page action
+                // TODO: Add navigation to company page
+            } label: {
+                HStack {
+                    Text("企業ページ")
+                    Image(systemName: "arrow.up.right")
+                        .font(.caption)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                }
+            }
+        }
+        ToolbarItemGroup(placement: .bottomBar) {
+            bottomToolbarGroup
+        }
     }
     
     private var leadingToolbarButton: some View {
@@ -1640,9 +2223,6 @@ struct RecruitmentDetailsView: View {
         Button(action: {}) {
             Label("Done", systemImage: "heart")
         }
-        Button(action: {}) {
-            Label("Done", systemImage: "plus.square")
-        }
         Spacer()
         entryButton
     }
@@ -1690,15 +2270,78 @@ struct RecruitmentDetailsView: View {
         .padding()
         .presentationDetents([.medium, .large])
     }
+    
+    // MARK: - Label Chip Helper
+    
+    private func labelChip(text: String, symbol: String? = nil, chipColor: Color? = nil) -> some View {
+        HStack(spacing: 4) {
+            if let symbol = symbol {
+                Image(systemName: symbol)
+                    .font(.caption.weight(.medium))
+                    .foregroundColor(.white)
+            }
+            Text(text)
+                .font(.subheadline.weight(.medium))
+                .foregroundColor(.white)
+        }
+        .fixedSize(horizontal: true, vertical: true)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 4)
+        .background(
+            Group {
+                if let chipColor = chipColor {
+                    Capsule()
+                        .fill(chipColor.opacity(0.85))
+                        .overlay(
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [.black.opacity(0.0), .black.opacity(0.0)],
+                                        startPoint: .bottom,
+                                        endPoint: .top
+                                    )
+                                )
+                        )
+                        .overlay(
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [.clear, .white.opacity(0.3)],
+                                        startPoint: .bottom,
+                                        endPoint: .top
+                                    )
+                                )
+                        )
+                } else {
+                    Capsule().fill(.thinMaterial)
+                        .overlay(
+                            Capsule()
+                                .fill(
+                                    LinearGradient(
+                                        colors: [.clear, .white],
+                                        startPoint: .bottom,
+                                        endPoint: .top
+                                    )
+                                )
+                        )
+                }
+            }
+        )
+        .overlay(
+            Capsule()
+                .strokeBorder(.white.opacity(0.5), lineWidth: 1)
+        )
+        .foregroundStyle(chipColor ?? .black)
+    }
 
     // MARK: - Body
 
     var body: some View {
         NavigationStack {
             mainScrollView
-        //.navigationTitle("募集の詳細")
-        //.navigationSubtitle(title)
-                // .navigationBarTitleDisplayMode(.inline)
+        .navigationTitle("このイベントの詳細")
+        .navigationSubtitle(title)
+        .navigationBarTitleDisplayMode(.inline)
                 .toolbar { toolbarContent }
             .sheet(isPresented: $showApplySheet) {
             // Simple “deadline” indicator (static placeholder)
@@ -1719,7 +2362,7 @@ struct RecruitmentDetailsView: View {
 
 // MARK: - Parallax Header (kept, no backend)
 
-struct ParallaxHeaderView: View {
+struct ParallaxHeaderView2: View {
     let imageURL: URL?
     let height: CGFloat
     
@@ -1731,6 +2374,7 @@ struct ParallaxHeaderView: View {
             parallaxContent(for: geo)
         }
         .frame(height: height)
+        .drawingGroup()
     }
     
     private func parallaxContent(for geo: GeometryProxy) -> some View {
@@ -1828,7 +2472,6 @@ struct ParallaxHeaderView: View {
                 ProgressView()
                     .controlSize(.large)
             }
-            .padding(.top, 60)
         }
         .aspectRatio(4/3, contentMode: .fill)
         .shimmeringPlaceholder()
@@ -1837,7 +2480,7 @@ struct ParallaxHeaderView: View {
 
 // MARK: - Section Card
 
-struct JobSectionView: View {
+struct JobSectionView2: View {
     let kind: JobSectionKind
     let content: String
     var body: some View {
@@ -1870,7 +2513,7 @@ struct JobSectionView: View {
 
 // MARK: - Flow Layout (unchanged, UI-only)
 
-struct FlowLayout<Data: RandomAccessCollection, Content: View>: View where Data.Element: Hashable {
+struct FlowLayout2<Data: RandomAccessCollection, Content: View>: View where Data.Element: Hashable {
     let tags: Data
     let content: (Data.Element) -> Content
     @State private var totalHeight = CGFloat.zero
@@ -1933,19 +2576,81 @@ private struct ViewHeightKey: PreferenceKey {
     }
 }
 
+// MARK: - Animated Mesh Gradient Background
+
+struct AnimatedMeshGradientBackground: View {
+    private let colors: [Color] = [
+        Color(red: 1.00, green: 0.42, blue: 0.42),
+        Color(red: 1.00, green: 0.55, blue: 0.00),
+        Color(red: 1.00, green: 0.27, blue: 0.00),
+        
+        Color(red: 1.00, green: 0.41, blue: 0.71),
+        Color(red: 0.85, green: 0.44, blue: 0.84),
+        Color(red: 0.54, green: 0.17, blue: 0.89),
+        
+        Color(red: 0.29, green: 0.00, blue: 0.51),
+        Color(red: 0.00, green: 0.00, blue: 0.55),
+        Color(red: 0.10, green: 0.10, blue: 0.44)
+    ]
+    
+    private let points: [SIMD2<Float>] = [
+        SIMD2<Float>(0.0, 0.0), SIMD2<Float>(0.5, 0.0), SIMD2<Float>(1.0, 0.0),
+        SIMD2<Float>(0.0, 0.5), SIMD2<Float>(0.5, 0.5), SIMD2<Float>(1.0, 0.5),
+        SIMD2<Float>(0.0, 1.0), SIMD2<Float>(0.5, 1.0), SIMD2<Float>(1.0, 1.0)
+    ]
+    
+    var body: some View {
+        TimelineView(.animation(minimumInterval: 1.0/30.0)) { timeline in
+            MeshGradient(
+                width: 3,
+                height: 3,
+                points: points,
+                colors: animatedColors(for: timeline.date),
+                background: .black,
+                smoothsColors: true
+            )
+        }
+    }
+    
+    private func animatedColors(for date: Date) -> [Color] {
+        let phase = CGFloat(date.timeIntervalSince1970)
+        
+        return colors.enumerated().map { index, color in
+            let hueShift = cos(phase + Double(index) * 0.3) * 0.1
+            return shiftHue(of: color, by: hueShift)
+        }
+    }
+    
+    private func shiftHue(of color: Color, by amount: Double) -> Color {
+        var hue: CGFloat = 0
+        var saturation: CGFloat = 0
+        var brightness: CGFloat = 0
+        var alpha: CGFloat = 0
+        
+        UIColor(color).getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+        
+        hue += CGFloat(amount)
+        hue = hue.truncatingRemainder(dividingBy: 1.0)
+        
+        if hue < 0 { hue += 1 }
+        
+        return Color(hue: Double(hue), saturation: Double(saturation), brightness: Double(brightness), opacity: Double(alpha))
+    }
+}
+
 // MARK: - Preview
 
 #Preview {
     NavigationStack {
-        RecruitmentDetailsView(
+        EventDetailsView(
             jobID: "XR9Q2L",
-            imageURL: URL(string: "https://roushikyo-digital.com/wp-content/uploads/2022/08/img-2206-1821-02.png"),
+            imageURL: URL(string: "https://paiza-webapp.s3.ap-northeast-1.amazonaws.com/recruiter/5427/photo_top/large-3e64bc594b80bd45570a4fb1667eef8f.jpg"),
             eikenRequired: "2級",
             toeicRequired: "700",
-            companyLogo: "OLC",
-            title: "新卒採用 - 株式会社オリエンタルランドで共に夢を紡ぐキャリア (IT・デジタルマネジメント)",
+            companyLogo: "Solvvy",
+            title: "コンサル志望学生向け: 【金融×IT】を上場企業で学べる3DAYインターン",
             businessName: "Solvvy株式会社",
-            stationName: "新宿駅",
+            stationName: "舞浜駅",
             jobDuration: "3ヶ月以上から",
             roleKind: "アルバイト・パート",
             payHourly: "¥1,520",
@@ -1954,3 +2659,4 @@ private struct ViewHeightKey: PreferenceKey {
         .navigationBarTitleDisplayMode(.inline)
     }
 }
+

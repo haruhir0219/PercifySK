@@ -17,40 +17,40 @@ struct HomeView: View {
             )
             .padding(.all, -50)
             .ignoresSafeArea()
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 24) {
-                        // Featured Card
-                        GeometryReader { geometry in
-                            ScrollView(.horizontal, showsIndicators: false) {
-                                HStack(spacing: 16) {
-                                    ForEach(0..<3) { _ in
-                                        ZStack(alignment: .topLeading) {
-                                            Image("expo2")
-                                                .resizable()
-                                                .scaledToFill()
-                                                .frame(width: geometry.size.width - 32, height: 220)
-                                                .clipShape(RoundedRectangle(cornerRadius: 0))
-                                            
-                                            VStack(alignment: .leading, spacing: 8) {
-                                                Text(" ")
-                                                    .font(.headline)
-                                                    .foregroundColor(.black)
-                                                
-                                                Text("就活EXPO\n2025")
-                                                    .font(.system(size: 48, weight: .bold, design: .rounded))
-                                                    .foregroundColor(.clear)
-                                            }
-                                            .padding()
-                                        }
-                                        .onTapGesture {
-                                            isShowingEventDetail = true
-                                        }
+            
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // Featured Card
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 16) {
+                            ForEach(0..<3) { _ in
+                                ZStack(alignment: .topLeading) {
+                                    Image("expo2")
+                                        .resizable()
+                                        .scaledToFill()
+                                        .frame(width: 340, height: 220)
+                                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                                    
+                                    VStack(alignment: .leading, spacing: 8) {
+                                        Text(" ")
+                                            .font(.headline)
+                                            .foregroundColor(.black)
+                                        
+                                        Text("就活EXPO\n2025")
+                                            .font(.system(size: 48, weight: .bold, design: .rounded))
+                                            .foregroundColor(.clear)
                                     }
+                                    .padding()
                                 }
-                                .padding(.horizontal, 16)
+                                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                                .onTapGesture {
+                                    isShowingEventDetail = true
+                                }
                             }
                         }
-                        .frame(height: 220)
+                        .padding(.horizontal)
+                        .padding(.vertical)
+                    }
                     
                     // Horizontal Scrolling Section
                     VStack(alignment: .leading, spacing: 12) {
@@ -172,10 +172,6 @@ struct HomeView: View {
                                                         .scaledToFill()
                                                         .frame(width: 240, height: 180)
                                                         .clipShape(RoundedRectangle(cornerRadius: 12))
-                                                        .overlay(
-                                                            RoundedRectangle(cornerRadius: 15)
-                                                                .strokeBorder(Color.accentColor.opacity(0.6), lineWidth: 6)
-                                                        )
                                                         .overlay(
                                                             ZStack {
                                                                 Capsule()

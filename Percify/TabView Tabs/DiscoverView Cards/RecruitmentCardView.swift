@@ -87,7 +87,7 @@ struct RecruitmentCardView: View {
             .highPriorityGesture(dragGesture)
             .animation(.spring(response: 0.3, dampingFraction: 0.9), value: translation)
             .fullScreenCover(isPresented: $showDetails) {
-                RecruitmentDetailsView(
+                EventDetailsView(
                     jobID: recruitment.id.uuidString,
                     imageURL: recruitment.headerImageURL,
                     eikenRequired: "2級以上",

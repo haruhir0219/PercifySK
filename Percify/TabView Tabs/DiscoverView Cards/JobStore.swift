@@ -64,7 +64,7 @@ class JobStore {
     /// Returns the progress percentage (0.0 to 1.0) of cards swiped (excluding hint cards)
     var swipeProgress: Double {
         guard initialCardCount > 0 else { return 0.0 }
-        let recruitmentCardsRemaining = cards.filter { 
+        let recruitmentCardsRemaining = cards.filter {
             if case .recruitment = $0 { return true }
             return false
         }.count
@@ -257,6 +257,27 @@ class JobStore {
                 classification: "本選考",
                 headerImageURL: URL(string: "https://www.itclogi.com/application/files/3817/4347/9132/image-crosstalk-01.jpg")!,
                 location: "出社"
+            ),
+            Recruitment(
+                companyName: "Solvvy株式会社",
+                companyLogo: "Solvvy",
+                badgeText: "Percify特別選考",
+                titleText: "コンサル志望学生向け: 【金融×IT】を学べる3DAYインターン",
+                industryLeft: "Industry",
+                industryRight: "コンサルティング・金融",
+                typeLeft: "Type",
+                typeRight: "インターン",
+                pay1Label: "Pay1",
+                pay1Value: "320",
+                pay2Label: "Pay2",
+                pay2Value: "1120",
+                tag1: "#上場企業",
+                tag2: "#福利厚生充実",
+                tag3: "#Percify特別選考",
+                deadline: "あと14日",
+                classification: "インターン",
+                headerImageURL: URL(string: "https://paiza-webapp.s3.ap-northeast-1.amazonaws.com/recruiter/5427/photo_top/large-3e64bc594b80bd45570a4fb1667eef8f.jpg")!,
+                location: "出社"
             )
         ]
         
@@ -272,7 +293,7 @@ class JobStore {
     /// Handle swiping a hint card (just removes it, no tracking)
     func handleHintSwipe() {
         // Find and remove the hint card
-        if let idx = cards.firstIndex(where: { 
+        if let idx = cards.firstIndex(where: {
             if case .hint = $0 { return true }
             return false
         }) {
@@ -372,7 +393,7 @@ class JobStore {
     private var lastAction: SwipeAction?
     
     private func removeCard(_ item: Recruitment, action: SwipeAction) {
-        if let idx = cards.firstIndex(where: { 
+        if let idx = cards.firstIndex(where: {
             if case .recruitment(let recruitment) = $0, recruitment == item {
                 return true
             }
@@ -399,7 +420,7 @@ class JobStore {
         let cardTypes = newCards.map { CardType.recruitment($0) }
         cards.append(contentsOf: cardTypes)
         // Update initial count to include newly added cards
-        let recruitmentCount = cards.filter { 
+        let recruitmentCount = cards.filter {
             if case .recruitment = $0 { return true }
             return false
         }.count
