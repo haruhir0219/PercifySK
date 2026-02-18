@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Shimmer
 
 struct MessagesArchivedView: View {
     @Environment(\.dismiss) private var dismiss

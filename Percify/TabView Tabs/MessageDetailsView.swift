@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Shimmer
 
 // MARK: - UI Models
 
@@ -54,6 +55,8 @@ struct MessagesChatView: View {
     @State private var keyboardHeight: CGFloat = 0
     @State private var scrollProxy: ScrollViewProxy?
     @State private var hasScrolledToBottom = false
+    @State private var showBottomSheet: Bool = true
+    @State private var scoutAccepted: Bool = false
 
     init(conversation: ChatConversation, currentUserUID: String) {
         self.conversation = conversation
@@ -106,6 +109,19 @@ struct MessagesChatView: View {
             },
             onUndoSend: {
                 undoSend(message)
+            },
+            onEntry: {
+                showBottomSheet = false
+                let entryMessage = ConversationMessage(
+                    id: UUID().uuidString,
+                    senderUID: currentUserUID,
+                    text: "はい、参加を希望します。",
+                    timestamp: Date(),
+                    editedAt: nil,
+                    isDeleted: false,
+                    readByCount: 1
+                )
+                messages.append(entryMessage)
             }
         )
         .id(message.id)
@@ -217,6 +233,21 @@ struct MessagesChatView: View {
                 }
             }
         }
+        .overlay {
+            if !scoutAccepted {
+                ZStack {
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .ignoresSafeArea()
+                        .allowsHitTesting(true)
+                    Text("スカウトが届いています。\n承諾して開封します。")
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+            }
+        }
         .background(
             LinearGradient(
                 colors: [Color.accentColor.opacity(0.2), Color(.systemBackground), Color(.systemBackground)],
@@ -275,16 +306,39 @@ struct MessagesChatView: View {
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 16)
             .padding(.bottom, keyboardHeight == 0 ? 0 : 10)
+            .opacity(scoutAccepted ? 1 : 0)
+            .disabled(!scoutAccepted)
         }
         .toolbar {
+            if !scoutAccepted {
+                ToolbarItemGroup(placement: .bottomBar) {
+                    HStack {
+                        Button("承諾しない") {
+                        }
+                        .tint(.red)
+                    }
+                    Spacer()
+                }
+                ToolbarSpacer(.fixed, placement: .topBarTrailing)
+                ToolbarItemGroup(placement: .bottomBar) {
+                    HStack {
+                        Button("スカウトを承諾") {
+                            withAnimation {
+                                scoutAccepted = true
+                            }
+                        }
+                        .buttonStyle(.glassProminent)
+                    }
+                }
+            }
             ToolbarItem(placement: .principal) {
                 ZStack {
                     Button {
                         showingCertifiedPopover = true
                     } label: {
                         HStack(spacing: 6) {
-                            Image(systemName: "checkmark.seal.fill")
-                                .font(.caption)
+                            Image(systemName: "building.2.fill")
+                                .font(.caption2)
                                 .fontWeight(.bold)
                                 .foregroundStyle(.secondary)
                                 .padding(.leading, -4)
@@ -385,26 +439,26 @@ struct MessagesChatView: View {
                 otherUserProfile = ConversationUserProfile(uid: "other", fullName: "Solvvy株式会社 採用担当", photoURL: nil)
 
                 messages = [
-                    ConversationMessage(
-                        id: UUID().uuidString,
-                        senderUID: "other",
-                        text: """
-松本知大さま、こんにちは！
-Solvvy株式会社吉丸でございます。
+                    //ConversationMessage(
+                        //id: UUID().uuidString,
+                        //senderUID: "other",
+                        //text: """
+//松本知大さま、こんにちは！
+//Solvvy株式会社吉丸でございます。
 
-先日はPercify就活EXPOにてありがとうございました！
-松本知大さまにとって有意義なお時間になっておりましたら幸いです。
+//先日はPercify就活EXPOにてありがとうございました！
+//松本知大さまにとって有意義なお時間になっておりましたら幸いです。
 
-EXPOでもお伝えしたコンサル選考対策セミナーに加え、
-新たに役員＆新卒入社社員と話せるポジション別説明会を開催いたします！ぜひご参加ください！
-""",
-                        timestamp: Date().addingTimeInterval(-3600),
-                        editedAt: nil,
-                        isDeleted: false,
-                        readByCount: 2,
-                        senderDisplayName: "Solvvy株式会社",
-                        senderIcon: nil
-                    ),
+//EXPOでもお伝えしたコンサル選考対策セミナーに加え、
+//新たに役員＆新卒入社社員と話せるポジション別説明会を開催いたします！ぜひご参加ください！
+//""",
+                        //timestamp: Date().addingTimeInterval(-3600),
+                        //editedAt: nil,
+                        //isDeleted: false,
+                        //readByCount: 2,
+                        //senderDisplayName: "Solvvy株式会社",
+                        //senderIcon: nil
+                    //),
                     ConversationMessage(
                         id: UUID().uuidString,
                         senderUID: "other",
@@ -437,15 +491,6 @@ EXPOでもお伝えしたコンサル選考対策セミナーに加え、
                             location: "出社"
                         )
                     ),
-                    ConversationMessage(
-                        id: UUID().uuidString,
-                        senderUID: currentUserUID,
-                        text: "はい、参加を希望します。",
-                        timestamp: Date().addingTimeInterval(-3500),
-                        editedAt: nil,
-                        isDeleted: false,
-                        readByCount: 1
-                    )
                 ]
             }
         }
@@ -463,6 +508,13 @@ EXPOでもお伝えしたコンサル選考対策セミナーに加え、
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
             keyboardHeight = 0
         }
+        //.sheet(isPresented: $showBottomSheet) {
+            //BottomSheetContentView()
+                //.presentationDetents([.fraction(0.124)])
+                //.presentationDragIndicator(.hidden)
+                //.presentationBackgroundInteraction(.enabled)
+                //.interactiveDismissDisabled(true)
+        //}
     }
 }
 
@@ -493,6 +545,7 @@ struct ConversationBubbleView: View {
     let shouldShowTimestamp: Bool
     let onEdit: () -> Void
     let onUndoSend: () -> Void
+    var onEntry: (() -> Void)? = nil
 
     @State private var isSingleLine = false
 
@@ -566,7 +619,7 @@ struct ConversationBubbleView: View {
                 }
 
                 if let recruitment = message.inlineRecruitmentCard {
-                    InlineRecruitmentCardView(recruitment: recruitment)
+                    InlineRecruitmentCardView(recruitment: recruitment, onEntry: onEntry)
                         .frame(maxWidth: 280)
                 }
 
@@ -602,7 +655,9 @@ struct ConversationBubbleView: View {
 
 struct InlineRecruitmentCardView: View {
     let recruitment: Recruitment
+    var onEntry: (() -> Void)? = nil
 
+    @Environment(\.dismiss) private var dismiss
     @State private var imageOpacity: Double = 0
     @State private var showDetails = false
     @Namespace private var transition
@@ -612,32 +667,160 @@ struct InlineRecruitmentCardView: View {
             showDetails = true
         } label: {
             VStack(alignment: .leading, spacing: 0) {
-                // Header image
-                ZStack(alignment: .topTrailing) {
-                    AsyncImage(url: recruitment.headerImageURL) { phase in
-                        switch phase {
-                        case .empty:
-                            Color(.systemGray5)
-                                .shimmering()
-                        case .success(let image):
-                            image
+                // Header spacer region (image shows through here)
+                Color.clear.frame(height: 110)
+
+                // Card details + entry button
+                VStack(alignment: .leading, spacing: 0) {
+                    // Card details
+                    VStack(alignment: .leading, spacing: 6) {
+                        HStack(spacing: 10) {
+                            Image(recruitment.companyLogo)
                                 .resizable()
                                 .scaledToFill()
-                                .opacity(imageOpacity)
-                                .onAppear {
-                                    withAnimation(.easeIn(duration: 0.3)) {
-                                        imageOpacity = 1
-                                    }
+                                .frame(width: 36, height: 36)
+                                .clipShape(Circle())
+                                .overlay(Circle().strokeBorder(Color(.systemGray4), lineWidth: 0.5))
+
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(recruitment.titleText)
+                                    .font(.footnote)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(2)
+                                Text(recruitment.companyName)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+
+                        Divider()
+
+                        HStack(spacing: 0) {
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text("新卒年収")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                HStack(alignment: .bottom, spacing: 1) {
+                                    Text(recruitment.pay1Value)
+                                        .font(.subheadline)
+                                        .fontWeight(.heavy)
+                                    Text("万円")
+                                        .font(.caption2)
+                                        .fontWeight(.semibold)
+                                        .padding(.bottom, 1)
                                 }
-                        case .failure:
-                            Color(.systemGray5)
-                        @unknown default:
-                            Color.clear
+                            }
+                            Spacer()
+                            VStack(alignment: .trailing, spacing: 1) {
+                                Text("30歳年収")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                HStack(alignment: .bottom, spacing: 1) {
+                                    Text(recruitment.pay2Value)
+                                        .font(.subheadline)
+                                        .fontWeight(.heavy)
+                                    Text("万円")
+                                        .font(.caption2)
+                                        .fontWeight(.semibold)
+                                        .padding(.bottom, 1)
+                                }
+                            }
+                            Spacer()
+                            Text(recruitment.classification)
+                                .font(.caption2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.accentColor)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 4)
+                                .background(Capsule().fill(.thinMaterial))
+                        }
+
+                        HStack(spacing: 6) {
+                            ForEach([recruitment.tag1, recruitment.tag2, recruitment.tag3], id: \.self) { tag in
+                                Text(tag)
+                                    .font(.caption2)
+                                    .lineLimit(1)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 2)
+                                    .background(Capsule().fill(Color(.systemGray6)))
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
-                    .frame(height: 110)
-                    .clipped()
+                    .padding(10)
 
+                    // Entry button
+                    HStack {
+                        Button {
+                            onEntry?()
+                        } label: {
+                            Text("エントリー")
+                                .font(.subheadline)
+                                .fontWeight(.bold)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 2)
+                        }
+                        .buttonStyle(.glassProminent)
+                        .padding()
+                    }
+                    
+                    HStack {
+                        Text("""
+松本知大さま、こんにちは！
+Solvvy株式会社吉丸でございます。
+
+先日はPercify就活EXPOにてありがとうございました！
+松本知大さまにとって有意義なお時間になっておりましたら幸いです。
+
+EXPOでもお伝えしたコンサル選考対策セミナーに加え、
+新たに役員＆新卒入社社員と話せるポジション別説明会を開催いたします！ぜひご参加ください！
+""")
+                        .font(.subheadline)
+                        .padding(.all, 12)
+                    }
+                    .padding(.all, 10)
+                }
+                //.background(Color.background)
+            }
+            .background(alignment: .top) {
+                // Badge overlay
+                AsyncImage(url: recruitment.headerImageURL) { phase in
+                    switch phase {
+                    case .empty:
+                        Color(.systemGray5)
+                            .shimmering()
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .scaledToFill()
+                            .opacity(imageOpacity)
+                            .onAppear {
+                                withAnimation(.easeIn(duration: 0.3)) {
+                                    imageOpacity = 1
+                                }
+                            }
+                    case .failure:
+                        Color(.systemGray5)
+                    @unknown default:
+                        Color.clear
+                    }
+                }
+                .frame(height: 200)
+                .overlay(alignment: .bottom) {
+                    VariableBlurView(maxBlurRadius: 12, direction: .blurredBottomClearTop)
+                        .frame(height: 110).overlay(
+                            LinearGradient(
+                                colors: [.clear, Color(.systemBackground).opacity(0.95)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                }
+                .clipped()
+                .overlay(alignment: .topTrailing) {
                     // Badge
                     HStack(spacing: 4) {
                         Image("LogoSmall")
@@ -657,112 +840,17 @@ struct InlineRecruitmentCardView: View {
                             .fill(Color.purple)
                             .overlay(Capsule().strokeBorder(Color.white.opacity(0.3), lineWidth: 0.5))
                     )
-                    .padding(8)
+                    .padding(20)
+                    .padding(.top, -5)
                 }
-
-                // Card details
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 10) {
-                        Image(recruitment.companyLogo)
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 36, height: 36)
-                            .clipShape(Circle())
-                            .overlay(Circle().strokeBorder(Color(.systemGray4), lineWidth: 0.5))
-
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(recruitment.titleText)
-                                .font(.footnote)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(.primary)
-                                .lineLimit(2)
-                            Text(recruitment.companyName)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-
-                    Divider()
-
-                    HStack(spacing: 0) {
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text("新卒年収")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            HStack(alignment: .bottom, spacing: 1) {
-                                Text(recruitment.pay1Value)
-                                    .font(.subheadline)
-                                    .fontWeight(.heavy)
-                                Text("万円")
-                                    .font(.caption2)
-                                    .fontWeight(.semibold)
-                                    .padding(.bottom, 1)
-                            }
-                        }
-                        Spacer()
-                        VStack(alignment: .trailing, spacing: 1) {
-                            Text("30歳年収")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                            HStack(alignment: .bottom, spacing: 1) {
-                                Text(recruitment.pay2Value)
-                                    .font(.subheadline)
-                                    .fontWeight(.heavy)
-                                Text("万円")
-                                    .font(.caption2)
-                                    .fontWeight(.semibold)
-                                    .padding(.bottom, 1)
-                            }
-                        }
-                        Spacer()
-                        Text(recruitment.classification)
-                            .font(.caption2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(.accentColor)
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 4)
-                            .background(Capsule().fill(.thinMaterial))
-                    }
-
-                    HStack(spacing: 6) {
-                        ForEach([recruitment.tag1, recruitment.tag2, recruitment.tag3], id: \.self) { tag in
-                            Text(tag)
-                                .font(.caption2)
-                                .lineLimit(1)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Capsule().fill(Color(.systemGray6)))
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-                .padding(10)
-                .background(Color(.systemBackground))
-
-                // Entry button
-                Button {
-                    showDetails = true
-                } label: {
-                    Text("エントリー")
-                        .font(.headline)
-                        .fontWeight(.bold)
-                        .foregroundColor(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(
-                            LinearGradient(
-                                colors: [Color.accentColor, Color.accentColor.opacity(0.9)],
-                                startPoint: .top,
-                                endPoint: .bottom
-                            )
-                        )
-                }
-                .buttonStyle(.plain)
             }
         }
         .buttonStyle(.plain)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .background(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .fill(Color(.systemBackground))
+        )
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .strokeBorder(Color(.systemGray4), lineWidth: 0.5)
@@ -800,6 +888,27 @@ struct AnyShape: Shape {
 
     func path(in rect: CGRect) -> Path {
         _path(rect)
+    }
+}
+
+// MARK: - Bottom Sheet Content View
+
+struct BottomSheetContentView: View {
+    var body: some View {
+        VStack {
+            Spacer()
+            HStack(alignment: .center, spacing: 12) {
+                Image(systemName: "info.circle")
+                    .font(.title)
+                Text("エントリーを行うと、採用担当者と\nメッセージができるようになります。")
+                    .font(.subheadline)
+                    .multilineTextAlignment(.leading)
+            }
+            .foregroundColor(.secondary)
+            .padding(.bottom, -30)
+            Spacer()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 

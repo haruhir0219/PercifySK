@@ -1,4 +1,5 @@
 import SwiftUI
+import Shimmer
 
 // MARK: - Card Type Enum
 

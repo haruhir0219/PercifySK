@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import ConfettiSwiftUI
+import Shimmer
 
 struct DiscoverView: View {
     @Namespace var transition

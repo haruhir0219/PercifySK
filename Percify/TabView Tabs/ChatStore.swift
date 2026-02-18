@@ -1,4 +1,5 @@
 import SwiftUI
+import Shimmer
 
 struct Chat: Identifiable, Equatable, Codable {
     let id: UUID

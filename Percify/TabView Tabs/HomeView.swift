@@ -1,4 +1,5 @@
 import SwiftUI
+import Shimmer
 
 struct HomeView: View {
     @Namespace var transition

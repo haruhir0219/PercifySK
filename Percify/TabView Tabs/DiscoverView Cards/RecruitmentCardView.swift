@@ -1,6 +1,7 @@
 import SwiftUI
 import Charts
 import GlowGetter
+import Shimmer
 
 // MARK: - Visibility Preference Key
 

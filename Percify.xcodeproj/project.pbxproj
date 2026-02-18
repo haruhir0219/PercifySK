@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		C97DE7652EC457E700BDD8DB /* Glur in Frameworks */ = {isa = PBXBuildFile; productRef = C97DE7642EC457E700BDD8DB /* Glur */; };
+		C987404E2F45A32400D1CFF1 /* Shimmer in Frameworks */ = {isa = PBXBuildFile; productRef = C987404D2F45A32400D1CFF1 /* Shimmer */; };
 		C9892D522F0DC87B00855C6A /* ConfettiSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = C9892D512F0DC87B00855C6A /* ConfettiSwiftUI */; };
 		C9892D542F0E31C400855C6A /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C9892D532F0E31C400855C6A /* AppIcon.icon */; };
 		C9BD5E782F154EAF001E6604 /* GlowGetter in Frameworks */ = {isa = PBXBuildFile; productRef = C9BD5E772F154EAF001E6604 /* GlowGetter */; };
@@ -44,6 +45,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				C987404E2F45A32400D1CFF1 /* Shimmer in Frameworks */,
 				C9BD5E782F154EAF001E6604 /* GlowGetter in Frameworks */,
 				C9892D522F0DC87B00855C6A /* ConfettiSwiftUI in Frameworks */,
 				C97DE7652EC457E700BDD8DB /* Glur in Frameworks */,
@@ -93,6 +95,7 @@
 				C97DE7642EC457E700BDD8DB /* Glur */,
 				C9892D512F0DC87B00855C6A /* ConfettiSwiftUI */,
 				C9BD5E772F154EAF001E6604 /* GlowGetter */,
+				C987404D2F45A32400D1CFF1 /* Shimmer */,
 			);
 			productName = Percify;
 			productReference = C99603B82E94B85000066E4D /* Percify.app */;
@@ -127,6 +130,7 @@
 				C97DE7632EC457E700BDD8DB /* XCRemoteSwiftPackageReference "Glur" */,
 				C9892D502F0DC87B00855C6A /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */,
 				C9BD5E762F154EAF001E6604 /* XCRemoteSwiftPackageReference "GlowGetter" */,
+				C987404C2F45A32400D1CFF1 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C99603B92E94B85000066E4D /* Products */;
@@ -408,6 +412,14 @@
 				minimumVersion = 1.1.0;
 			};
 		};
+		C987404C2F45A32400D1CFF1 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/markiv/SwiftUI-Shimmer";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.1;
+			};
+		};
 		C9892D502F0DC87B00855C6A /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/simibac/ConfettiSwiftUI";
@@ -431,6 +443,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C97DE7632EC457E700BDD8DB /* XCRemoteSwiftPackageReference "Glur" */;
 			productName = Glur;
+		};
+		C987404D2F45A32400D1CFF1 /* Shimmer */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C987404C2F45A32400D1CFF1 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */;
+			productName = Shimmer;
 		};
 		C9892D512F0DC87B00855C6A /* ConfettiSwiftUI */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -1,570 +1,302 @@
 import SwiftUI
+import Shimmer
 
-// MARK: - UI Models
-
-struct ChatConversation {
-    var id: String
-    var participants: [String]
-    var createdAt: Date
-}
-
-struct ConversationUserProfile {
-    var uid: String
-    var fullName: String
-    var photoURL: String?
-}
-
-struct ConversationMessage: Identifiable, Equatable {
-    var id: String
-    var senderUID: String
-    var text: String
-    var timestamp: Date
-    var editedAt: Date? = nil
-    var isDeleted: Bool = false
-    var readByCount: Int = 1
-    var senderDisplayName: String? = nil
-    var senderIcon: String? = nil
-}
-
-// MARK: - Messages Chat View
-
-struct MessagesChatView: View {
-    let conversation: ChatConversation
-    let currentUserUID: String
-
-    @Environment(\.dismiss) private var dismiss
-    @FocusState private var isTextFieldFocused: Bool
-
-    @State private var messages: [ConversationMessage] = []
-    @State private var messageText: String = ""
-    @State private var editingMessageID: String? = nil
-
-    @State private var otherUserProfile: ConversationUserProfile? = nil
-    @State private var isMuted: Bool = false
-    @State private var showingCertifiedPopover: Bool = false
-
-    @State private var keyboardHeight: CGFloat = 0
-    @State private var scrollProxy: ScrollViewProxy?
-    @State private var hasScrolledToBottom = false
-
-    init(conversation: ChatConversation, currentUserUID: String) {
-        self.conversation = conversation
-        self.currentUserUID = currentUserUID
-    }
-
-    // MARK: Timestamp & spacing helpers
-
-    private func shouldShowTimestampForMessage(at index: Int) -> Bool {
-        guard index < messages.count else { return true }
-
-        let current = messages[index]
-
-        if index == messages.count - 1 { return true }
-        if index == 0 { return true }
-
-        let previous = messages[index - 1]
-
-        if current.senderUID != previous.senderUID { return true }
-
-        let delta = current.timestamp.timeIntervalSince(previous.timestamp)
-        return delta > 60
-    }
-
-    private func spacingForMessage(at index: Int) -> CGFloat {
-        guard index < messages.count && index > 0 else { return 12 }
-
-        let current = messages[index]
-        let previous = messages[index - 1]
-
-        let isSameSender = current.senderUID == previous.senderUID
-        let delta = current.timestamp.timeIntervalSince(previous.timestamp)
-        let isWithinOneMinute = delta <= 60
-
-        return (isSameSender && isWithinOneMinute) ? 4 : 12
-    }
-
-    @ViewBuilder
-    private func messageBubbleContent(for message: ConversationMessage, at index: Int) -> some View {
-        let showTimestamp = shouldShowTimestampForMessage(at: index)
-        let bottomSpacing = spacingForMessage(at: index + 1)
-
-        ConversationBubbleView(
-            message: message,
-            isFromCurrentUser: message.senderUID == currentUserUID,
-            otherUserProfile: otherUserProfile,
-            shouldShowTimestamp: showTimestamp,
-            onEdit: {
-                startEditing(message)
-            },
-            onUndoSend: {
-                undoSend(message)
-            }
-        )
-        .id(message.id)
-        .padding(.bottom, bottomSpacing)
-        .scrollTransition(.interactive(timingCurve: .easeInOut), axis: .vertical) { content, phase in
-            content.scaleEffect(phase.isIdentity ? 1 : 0.95 + (0.05 * phase.value))
-        }
-    }
-
-    private func scrollToBottomIfNeeded(proxy: ScrollViewProxy) {
-        guard let last = messages.last else { return }
-
-        if hasScrolledToBottom {
-            withAnimation {
-                proxy.scrollTo(last.id, anchor: .bottom)
-            }
-        } else {
-            proxy.scrollTo(last.id, anchor: .bottom)
-            hasScrolledToBottom = true
-        }
-    }
-
-    // MARK: Computed properties
-
-    private var senderDisplayName: String {
-        if let custom = messages.first(where: { $0.senderUID != currentUserUID })?.senderDisplayName {
-            return custom
-        }
-        return otherUserProfile?.fullName ?? "読み込み中"
-    }
-
-    private var senderIcon: String? {
-        if let custom = messages.first(where: { $0.senderUID != currentUserUID })?.senderIcon {
-            return custom
-        }
-        return otherUserProfile?.photoURL
-    }
-
-    // MARK: Actions
-
-    private func startEditing(_ message: ConversationMessage) {
-        guard !message.isDeleted else { return }
-        editingMessageID = message.id
-        messageText = message.text
-        isTextFieldFocused = true
-    }
-
-    private func cancelEditing() {
-        editingMessageID = nil
-        messageText = ""
-    }
-
-    private func sendOrEditMessage() {
-        let text = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
-
-        if let editingID = editingMessageID,
-           let idx = messages.firstIndex(where: { $0.id == editingID }) {
-            messages[idx].text = text
-            messages[idx].editedAt = Date()
-            editingMessageID = nil
-        } else {
-            let new = ConversationMessage(
-                id: UUID().uuidString,
-                senderUID: currentUserUID,
-                text: text,
-                timestamp: Date(),
-                editedAt: nil,
-                isDeleted: false,
-                readByCount: 1
-            )
-            messages.append(new)
-        }
-
-        messageText = ""
-    }
-
-    private func undoSend(_ message: ConversationMessage) {
-        guard let idx = messages.firstIndex(where: { $0.id == message.id }) else { return }
-        messages[idx].isDeleted = true
-    }
-
-    // MARK: Body
-
+struct MessagesView: View {
+    @Namespace var transition
+    @State private var isShowingSearch = false
+    @State private var isShowingMembership = false
+    @State private var isShowingArchived = false
+    @State private var chatStore = ChatStore()
+    
     var body: some View {
-        VStack(spacing: 0) {
-            ScrollViewReader { proxy in
-                ScrollView {
-                    LazyVStack(spacing: 0) {
-                        ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
-                            messageBubbleContent(for: message, at: index)
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(chatStore.activeChats) { chat in
+                    NavigationLink {
+                        MessageDetailsView(chat: chat) {
+                            // Decline callback
+                            chatStore.declineChat(chat)
+                        }
+                        .toolbar(.hidden, for: .tabBar)
+                    } label: {
+                        VStack(spacing: 0) {
+                            ChatRowView(chat: chat, isPriorityVariant: chat.isPriority)
+                                .padding(.horizontal)
+                                .padding(.vertical, 8)
+                            
+                            if chat.id != chatStore.activeChats.last?.id {
+                                Divider()
+                                    .padding(.leading, 88)
+                            }
                         }
                     }
-                    .padding()
-                }
-                .scrollDismissesKeyboard(.interactively)
-                .onChange(of: messages.count) { _, _ in
-                    scrollToBottomIfNeeded(proxy: proxy)
-                }
-                .onChange(of: isTextFieldFocused) { _, focused in
-                    if focused, let last = messages.last, hasScrolledToBottom {
-                        withAnimation {
-                            proxy.scrollTo(last.id, anchor: .bottom)
-                        }
-                    }
-                }
-                .onAppear {
-                    scrollProxy = proxy
+                    .buttonStyle(.plain)
                 }
             }
+            .padding(.top, 8)
         }
         .background(
             LinearGradient(
-                colors: [Color(.systemGroupedBackground), Color.white],
+                colors: [
+                    Color.indigo.opacity(0.7), Color.purple.opacity(0.15), Color(.systemGroupedBackground), Color(.systemGroupedBackground), Color(.systemGroupedBackground), Color(.systemGroupedBackground), Color(.systemGroupedBackground)
+                ],
                 startPoint: .top,
                 endPoint: .bottom
             )
+            .padding(.all, -50)
             .ignoresSafeArea()
         )
-        .safeAreaBar(edge: .bottom) {
-            GlassEffectContainer {
-                HStack {
-                    TextField(
-                        editingMessageID == nil ? "メッセージを入力" : "メッセージを編集",
-                        text: $messageText,
-                        axis: .vertical
-                    )
-                    .textFieldStyle(.plain)
-                    .padding(10)
-                    .padding(.leading, 4)
-                    .glassEffect(.regular.interactive())
-                    .focused($isTextFieldFocused)
-                    .lineLimit(1...7)
-
-                    if editingMessageID != nil {
-                        Button {
-                            cancelEditing()
-                        } label: {
-                            Image(systemName: "xmark")
-                                .font(.title2)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.red)
-                        }
-                        .padding(10)
-                        .glassEffect(.regular.interactive(), in: Circle())
-                    }
-
-                    Button {
-                        let impact = UIImpactFeedbackGenerator(style: .rigid)
-                        impact.impactOccurred()
-                        sendOrEditMessage()
-                        isTextFieldFocused = true
-                    } label: {
-                        Image(systemName: editingMessageID == nil ? "arrow.up" : "checkmark")
-                            .font(.title2)
-                            .fontWeight(.semibold)
-                            .foregroundColor(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .gray : .black)
-                            .padding(.all, 10)
-                            .glassEffect(
-                                .regular
-                                    .tint(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .clear : .accentColor)
-                                    .interactive(),
-                                in: Circle()
-                            )
-                    }
-                    .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
-            .frame(width: UIScreen.main.bounds.width * 0.92)
-            .padding(.bottom, keyboardHeight == 0 ? 0 : 10)
-        }
+        .navigationTitle("メッセージ")
+        .toolbarTitleDisplayMode(.inlineLarge)
         .toolbar {
-            ToolbarItem(placement: .principal) {
-                ZStack {
-                    Button {
-                        showingCertifiedPopover = true
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: "checkmark.seal.fill")
-                                .font(.caption)
-                                .fontWeight(.bold)
-                                .foregroundStyle(.secondary)
-                                .padding(.leading, -4)
-                            Text(senderDisplayName.prefix(10))
-                                .font(.headline)
-                            Text("...")
-                                .font(.headline)
-                                .padding(.leading, -6)
-                        }
-                        .padding(.all, 6.5)
-                        .padding(.horizontal, 6)
-                        .glassEffect(.regular.interactive())
+            ToolbarSpacer(.fixed)
+            ToolbarSpacer(.fixed, placement: .topBarTrailing)
+            ToolbarItemGroup(placement: .topBarTrailing) {
+                HStack {
+                    Button(action: { isShowingMembership = true }) {
+                        Image(systemName: "star")
                     }
-                    .buttonStyle(.plain)
-                    .popover(isPresented: $showingCertifiedPopover) {
-                        VStack(spacing: 8) {
-                            Image(systemName: "checkmark.seal.fill")
-                                .font(.title)
-                                .foregroundStyle(.blue)
-                            Text(senderDisplayName)
-                                .font(.headline)
-                            Text("認証されたビジネスです。")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-                        .padding()
-                        .presentationCompactAdaptation(.popover)
-                    }
-                    .offset(y: 54)
-
-                    Button(action: {}) {
-                        ZStack {
-                            Circle()
-                                .fill(Color(.systemGray5))
-                                .frame(width: 60, height: 60)
-                                .shimmering()
-                                .clipShape(Circle())
-
-                            if let iconURL = senderIcon, let url = URL(string: iconURL) {
-                                AsyncImage(url: url) { phase in
-                                    switch phase {
-                                    case .empty:
-                                        ProgressView()
-                                    case .success(let image):
-                                        image
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: 60, height: 60)
-                                            .clipShape(Circle())
-                                    case .failure:
-                                        Image(systemName: " ")
-                                            .resizable()
-                                            .frame(width: 60, height: 60)
-                                    @unknown default:
-                                        EmptyView()
-                                    }
-                                }
-                            } else {
-                                Image(systemName: " ")
-                                    .resizable()
-                                    .frame(width: 60, height: 60)
-                            }
-                        }
-                        .shadow(color: .black.opacity(0.1), radius: 12)
-                    }
-                    .offset(y: 12)
                 }
-            }
-
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Menu {
-                    Button {
-                        isMuted.toggle()
-                    } label: {
-                        Label(isMuted ? "ミュートを解除" : "ミュート", systemImage: isMuted ? "speaker.wave.2" : "speaker.slash")
+                .matchedTransitionSource(id: "membership", in: transition)
+                HStack {
+                    Button(action: { isShowingSearch = true }) {
+                        Image(systemName: "line.3.horizontal.decrease")
                     }
-
-                    Divider()
-
-                    Button(role: .destructive) {
-                        // UI-only: block action placeholder
-                    } label: {
-                        Label("ブロック", systemImage: "hand.raised")
-                    }
-
-                    Button(role: .destructive) {
-                        dismiss()
-                    } label: {
-                        Label("会話を削除", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
                 }
+                .matchedTransitionSource(id: "search", in: transition)
+                HStack {
+                    Button(action: { isShowingSearch = true }) {
+                        Image(systemName: "magnifyingglass")
+                    }
+                }
+                .matchedTransitionSource(id: "search", in: transition)
             }
         }
-        .onAppear {
-            if messages.isEmpty {
-                otherUserProfile = ConversationUserProfile(uid: "other", fullName: "RDA Corporation", photoURL: nil)
-
-                messages = [
-                    ConversationMessage(
-                        id: UUID().uuidString,
-                        senderUID: "other",
-                        text: "こんにちは。ご応募ありがとうございます。",
-                        timestamp: Date().addingTimeInterval(-3600),
-                        editedAt: nil,
-                        isDeleted: false,
-                        readByCount: 2,
-                        senderDisplayName: "RDA",
-                        senderIcon: nil
-                    ),
-                    ConversationMessage(
-                        id: UUID().uuidString,
-                        senderUID: currentUserUID,
-                        text: "よろしくお願いします！",
-                        timestamp: Date().addingTimeInterval(-3500),
-                        editedAt: nil,
-                        isDeleted: false,
-                        readByCount: 1
-                    )
-                ]
-            }
+        .sheet(isPresented: $isShowingSearch) {
+            MessagesArchivedView(chatStore: chatStore)
+                .navigationTransition(.zoom(sourceID: "search", in: transition))
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
-            if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
-                keyboardHeight = keyboardFrame.height
-
-                if let proxy = scrollProxy, let last = messages.last, hasScrolledToBottom {
-                    withAnimation(.easeOut(duration: 0.25)) {
-                        proxy.scrollTo(last.id, anchor: .bottom)
-                    }
-                }
-            }
+        .sheet(isPresented: $isShowingMembership) {
+            MembershipView()
+                .navigationTransition(.zoom(sourceID: "membership", in: transition))
         }
-        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
-            keyboardHeight = 0
-        }
-    }
-}
-
-// MARK: - Conversation Bubble View
-
-struct ConversationBubbleView: View {
-    let message: ConversationMessage
-    let isFromCurrentUser: Bool
-    let otherUserProfile: ConversationUserProfile?
-    let shouldShowTimestamp: Bool
-    let onEdit: () -> Void
-    let onUndoSend: () -> Void
-
-    @State private var isSingleLine = false
-
-    private var canEdit: Bool {
-        isFromCurrentUser && !message.isDeleted && message.timestamp.timeIntervalSinceNow > -900
-    }
-
-    private var canUndoSend: Bool {
-        isFromCurrentUser && !message.isDeleted
-    }
-
-    var body: some View {
-        HStack {
-            if isFromCurrentUser {
-                Spacer(minLength: 60)
-            }
-
-            VStack(alignment: isFromCurrentUser ? .trailing : .leading, spacing: 4) {
-                if !isFromCurrentUser, let profile = otherUserProfile {
-                    Text(profile.fullName)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-
-                if message.isDeleted {
-                    Text("このメッセージは削除されました")
-                        .font(.body)
-                        .italic()
-                        .foregroundColor(.secondary)
-                        .padding(12)
-                        .background(Color(.systemGray5))
-                        .cornerRadius(100)
-                } else {
-                    Text(message.text)
-                        .font(.body)
-                        .padding(12)
-                        .background(isFromCurrentUser ? Color.accentColor.opacity(0.7) : Color(.systemGray5))
-                        .foregroundColor(.primary)
-                        .clipShape(isSingleLine ? AnyShape(Capsule()) : AnyShape(RoundedRectangle(cornerRadius: 18)))
-                        .background(
-                            GeometryReader { geometry in
-                                Color.clear
-                                    .onAppear {
-                                        isSingleLine = geometry.size.height <= 44
-                                    }
-                            }
-                        )
-                        .contextMenu {
-                            Button {
-                                UIPasteboard.general.string = message.text
-                            } label: {
-                                Label("コピー", systemImage: "doc.on.doc")
-                            }
-
-                            if canEdit {
-                                Button {
-                                    onEdit()
-                                } label: {
-                                    Label("編集", systemImage: "pencil")
-                                }
-                            }
-
-                            if canUndoSend {
-                                Button(role: .destructive) {
-                                    onUndoSend()
-                                } label: {
-                                    Label("送信を取り消す", systemImage: "arrow.uturn.backward")
-                                }
-                            }
-                        }
-                }
-
-                if shouldShowTimestamp {
-                    HStack(spacing: 4) {
-                        Text(message.timestamp, style: .time)
-                            .font(.caption2)
-                            .foregroundColor(.secondary)
-
-                        if message.editedAt != nil {
-                            Text("編集済み")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
-
-                        if isFromCurrentUser && !message.isDeleted {
-                            Text(message.readByCount > 1 ? "既読" : "配信済み")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-            }
-
-            if !isFromCurrentUser {
-                Spacer(minLength: 60)
-            }
-        }
-    }
-}
-
-// MARK: - Type-erased shape helper
-
-struct AnyShape: Shape {
-    private let _path: (CGRect) -> Path
-
-    init<S: Shape>(_ shape: S) {
-        _path = { rect in shape.path(in: rect) }
-    }
-
-    func path(in rect: CGRect) -> Path {
-        _path(rect)
-    }
-}
-
-// MARK: - MessagesView (entry point used by ContentView)
-
-struct MessagesView: View {
-    var body: some View {
-        MessagesChatView(
-            conversation: ChatConversation(
-                id: "default",
-                participants: ["currentUser", "other"],
-                createdAt: Date()
-            ),
-            currentUserUID: "currentUser"
-        )
     }
 }
 
 #Preview {
     NavigationStack {
-        MessagesChatView(
-            conversation: ChatConversation(
-                id: "preview",
-                participants: ["user1", "user2"],
-                createdAt: Date()
-            ),
-            currentUserUID: "user1"
+        MessagesView()
+    }
+}
+
+// MARK: - Chat Row View
+
+struct ChatRowView: View {
+    let chat: Chat
+    let isPriorityVariant: Bool
+    
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            // Chat content
+            HStack(alignment: .top, spacing: 26) {
+                // Spacer for logo
+                Color.clear
+                    .frame(width: 60, height: 60)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    // Top row: Badge and company name
+                    HStack(alignment: .center, spacing: 8) {
+                        if isPriorityVariant {
+                            // Priority badge pill
+                            //Text("Percify特別選考ルート")
+                            //.font(.headline)
+                            //.foregroundColor(.white)
+                            //.padding(.horizontal, 10)
+                            //.padding(.vertical, 4)
+                            //.background(
+                            //Capsule()
+                            //.fill(
+                            //LinearGradient(
+                            //colors: [.accentColor.opacity(0.9), .indigo.opacity(0.8)],
+                            //startPoint: .top,
+                            //endPoint: .bottom
+                            //)
+                            //)
+                            //)
+                        }
+                        
+                        Spacer()
+                    }
+                    
+                    // Company name
+                    HStack(alignment: .center, spacing: 8) {
+                        Text(chat.companyName)
+                            .font(.headline)
+                            .foregroundColor(.primary)
+                            .lineLimit(1)
+                            .offset(y: isPriorityVariant ? 12 : 0)
+                        
+                        Spacer()
+                        
+                        // Timestamp
+                        HStack {
+                            Text("2件未読")
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.white)
+                                .lineLimit(1)
+                                .padding(.vertical, 1)
+                                .padding(.horizontal, 6)
+                                .background(Color(Color.red).cornerRadius(12))
+                            Text(chat.timestamp)
+                                .font(.system(size: 14))
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    
+                    // Message preview with chevron
+                    HStack(alignment: .center, spacing: 4) {
+                        Text(chat.messagePreview)
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                            .lineLimit(2)
+                            .offset(y: isPriorityVariant ? 12 : 0)
+                        
+                        Spacer()
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.body)
+                            .foregroundColor(.secondary)
+                    }
+                }
+            }
+            .padding(.vertical, 14)
+            .contentShape(Rectangle())
+            
+            // Company Logo with optional priority outline (overlaid on top)
+            ZStack {
+                Circle()
+                    .fill(Color(.systemBackground))
+                
+                Image(chat.companyLogo)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 50, height: 50)
+                    .clipShape(Circle())
+            }
+            .frame(width: 60, height: 60)
+            .padding(isPriorityVariant ? 3 : 3)
+            .background(
+                Circle()
+                    .stroke(
+                        LinearGradient(
+                            colors: [.accentColor.opacity(0.9), .indigo.opacity(0.8)],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        ),
+                        lineWidth: isPriorityVariant ? 8 : 0
+                    )
+            )
+            .overlay(
+                HStack {
+                    Text("Percify特別選考")
+                        .font(.system(size: 9.5, weight: .heavy))
+                }
+                    .fontWeight(.heavy)
+                    .foregroundColor(.accentColor)
+                    .multilineTextAlignment(.center)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 2)
+                    .glassEffect(.regular)
+                    .offset(x: 110, y: -27)
+                    .opacity(isPriorityVariant ? 1 : 0)
         )
+            .overlay(
+                VStack {
+                    AsyncImage(url: URL(string: "https://media.istockphoto.com/id/1138617116/photo/im-happy-with-where-my-career-is-heading.jpg?s=612x612&w=0&k=20&c=33MvgqW7x0F3u86R-OculcAccnIxzBOIvXZ4nyjOSgM=")) { phase in
+                        switch phase {
+                        case .empty:
+                            Circle()
+                                .fill(Color(.systemGray5))
+                                .shimmering()
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                        case .failure:
+                            Circle()
+                                .fill(Color(.systemGray5))
+                                .overlay(
+                                    Image(systemName: "exclamationmark.circle")
+                                        .foregroundColor(.gray)
+                                )
+                        @unknown default:
+                            Circle()
+                                .fill(Color(.white))
+                        }
+                    }
+                    .frame(width: 32, height: 32)
+                    .clipShape(Circle())
+                    .overlay(
+                        Circle()
+                            .stroke(Color.gray.opacity(0.3), lineWidth: 1)
+                    )
+                }
+                    .offset(x: 22, y: 25)
+        )
+            .offset(y: 8)
+        }
+    }
+}
+
+// MARK: - Circular Text Helper
+
+struct CircularTextShape: Shape {
+    let text: String
+    
+    func path(in rect: CGRect) -> Path {
+        var path = Path()
+        let radius = min(rect.width, rect.height) / 2
+        let center = CGPoint(x: rect.midX, y: rect.midY)
+        
+        // Create a circular path
+        path.addArc(center: center, radius: radius, startAngle: .degrees(0), endAngle: .degrees(90), clockwise: true)
+        
+        return path
+    }
+}
+
+struct CircularTextView: View {
+    let text: String
+    
+    var body: some View {
+        Canvas { context, size in
+            let radius = min(size.width, size.height) / 2
+            let center = CGPoint(x: size.width / 2, y: size.height / 2)
+            let characterCount = CGFloat(text.count)
+            let totalAngle: CGFloat = 360 // Full circle
+            let anglePerCharacter = totalAngle / characterCount
+            
+            for (index, character) in text.enumerated() {
+                let angle = anglePerCharacter * CGFloat(index) - 90 // Start from top
+                let radians = angle * .pi / 180
+                
+                let x = center.x + radius * cos(radians)
+                let y = center.y + radius * sin(radians)
+                
+                var textContext = context
+                textContext.translateBy(x: x, y: y)
+                textContext.rotate(by: .degrees(angle + 90))
+                
+                textContext.draw(
+                    Text(String(character))
+                        .font(.system(size: 8, weight: .bold))
+                        .foregroundColor(.white),
+                    at: .zero
+                )
+            }
+        }
     }
 }

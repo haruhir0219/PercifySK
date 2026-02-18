@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Glur
+import Shimmer
 
 struct RecruitmentCardCompactView: View {
     let recruitment: Recruitment

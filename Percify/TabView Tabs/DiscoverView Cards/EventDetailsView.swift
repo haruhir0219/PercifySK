@@ -3,6 +3,7 @@
 import SwiftUI
 import UIKit
 import Charts
+import Shimmer
 
 // MARK: - Simple helpers / stubs (replace with your real ones later if needed)
 

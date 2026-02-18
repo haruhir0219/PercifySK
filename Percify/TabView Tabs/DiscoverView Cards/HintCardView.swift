@@ -7,6 +7,7 @@
 
 import SwiftUI
 import GlowGetter
+import Shimmer
 
 struct HintCardView: View {
     // Closures for swipe actions
