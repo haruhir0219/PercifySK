@@ -1,72 +1,83 @@
 import SwiftUI
 
 struct ProfileView: View {
-    @Namespace var transition
-    @State private var isShowingSearch = false
-    @State private var isShowingMembership = false
-    
     var body: some View {
-        ZStack {
-            LinearGradient(
-                colors: [
-                    Color.indigo.opacity(0.7), Color.purple.opacity(0.15), Color(.systemGroupedBackground), Color(.systemGroupedBackground), Color(.systemGroupedBackground), Color(.systemGroupedBackground), Color(.systemGroupedBackground)
-                ],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .padding(.all, -50)
-            .ignoresSafeArea()
-            
-            VStack {
-                Spacer()
-                ProgressView()
-                    .controlSize(.large)
-                Text("読み込み中...")
-                    .foregroundColor(.secondary)
-                    .padding(.top, 6)
-                Spacer()
-            }
-            .padding()
-            .navigationTitle("マイページ")
-            .toolbarTitleDisplayMode(.inlineLarge)
-            .toolbar {
-                ToolbarSpacer(.fixed)
-                ToolbarSpacer(.fixed, placement: .topBarTrailing)
-                ToolbarItemGroup(placement: .topBarTrailing) {
-                    HStack {
-                        Button(action: { isShowingMembership = true }) {
-                            Image(systemName: "star")
-                        }
-                    }
-                    .matchedTransitionSource(id: "membership", in: transition)
-                    HStack {
-                        Button(action: { isShowingSearch = true }) {
-                            Image(systemName: "line.3.horizontal.decrease")
-                        }
-                    }
-                    .matchedTransitionSource(id: "search", in: transition)
-                    HStack {
-                        Button(action: { isShowingSearch = true }) {
-                            Image(systemName: "magnifyingglass")
-                        }
-                    }
-                    .matchedTransitionSource(id: "search", in: transition)
+        NavigationStack {
+            List {
+                Section {
+                    SettingRowView(
+                        icon: "person.crop.circle",
+                        title: "Qfdbfou",
+                        gradientColors: [.blue.opacity(0.5), .blue]
+                    )
+                    SettingRowView(
+                        icon: "mappin.and.ellipse",
+                        title: "quebec",
+                        gradientColors: [.orange.opacity(0.5), .orange]
+                    )
+                    SettingRowView(
+                        icon: "star.fill",
+                        title: "gdyuaf",
+                        gradientColors: [.yellow.opacity(0.5), .yellow]
+                    )
+                }
+                Section {
+                    SettingRowView(
+                        icon: "bell.badge.fill",
+                        title: "ewf",
+                        gradientColors: [.pink.opacity(0.5), .pink]
+                    )
+                    SettingRowView(
+                        icon: "lock.shield.fill",
+                        title: "qufqwfebec",
+                        gradientColors: [.green.opacity(0.5), .green]
+                    )
+                    SettingRowView(
+                        icon: "gearshape.fill",
+                        title: "ggta",
+                        gradientColors: [.gray.opacity(0.5), .gray]
+                    )
                 }
             }
-            .sheet(isPresented: $isShowingSearch) {
-                SearchView()
-                    .navigationTransition(.zoom(sourceID: "search", in: transition))
+            .listStyle(.insetGrouped)
+            .navigationTitle("プロフィール")
+            .toolbarTitleDisplayMode(.inlineLarge)
+        }
+    }
+}
+
+struct SettingRowView: View {
+    let icon: String
+    let title: String
+    let gradientColors: [Color]
+
+    var body: some View {
+        HStack {
+            ZStack {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.white)
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            gradient: Gradient(colors: gradientColors),
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
+                Image(systemName: icon)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 17, height: 17)
+                    .foregroundColor(.white)
+                    .fontWeight(.semibold)
             }
-            .sheet(isPresented: $isShowingMembership) {
-                MembershipView()
-                    .navigationTransition(.zoom(sourceID: "membership", in: transition))
-            }
+            .frame(width: 28, height: 28)
+            Text(title)
+            Spacer()
         }
     }
 }
 
 #Preview {
-    NavigationStack {
-        ProfileView()
-    }
+    ProfileView()
 }

@@ -7,424 +7,811 @@
 
 import SwiftUI
 
-// MARK: - Message Model
-struct ChatMessage: Identifiable, Codable {
-    let id: UUID
-    let text: String
-    let isFromCurrentUser: Bool
-    let timestamp: Date
-    
-    init(id: UUID = UUID(), text: String, isFromCurrentUser: Bool, timestamp: Date = Date()) {
-        self.id = id
-        self.text = text
-        self.isFromCurrentUser = isFromCurrentUser
-        self.timestamp = timestamp
-    }
+// MARK: - UI Models
+
+struct ChatConversation {
+    var id: String
+    var participants: [String]
+    var createdAt: Date
 }
 
-// MARK: - Message Storage Manager
-@Observable
-class MessageStorage {
-    var messages: [ChatMessage] = []
-    var isAccepted: Bool = false
-    
-    private let storageKey = "saved_messages"
-    private let acceptanceKey = "scout_accepted"
-    
-    init() {
-        loadMessages()
-        loadAcceptanceStatus()
-        
-        // Add placeholder messages if empty
-        if messages.isEmpty {
-            addPlaceholderMessages()
-        }
-    }
-    
-    func addPlaceholderMessages() {
-        let message1 = ChatMessage(
-            text: """
-            松本 様
-            
-            突然のご連絡を差し上げますこと、失礼いたします。
-            伊藤忠商事株式会社 航空機リース事業部の□□と申します。
-            
-            この度、当社における将来的な人材採用に向けて、航空機関連ビジネス・アセットファイナンス領域における高度な専門性・ポテンシャルをお持ちの方を幅広くリサーチさせていただいております。
-            その中で、松本様のご経歴・ご関心領域を拝見し、当部門において求めております将来のグローバル人材像に極めて高い親和性があると判断し、ご挨拶を兼ねてご連絡させていただいた次第です。
-            
-            当社航空機リース事業は、航空会社・金融機関・投資家との国際的な取引を通じて、航空機の購入・売却、オペレーティングリース・ファイナンスリース、資産価値分析、リスクマネジメント等、多岐にわたる業務を行っております。特に、昨今の航空需要の回復と新機材へのリプレース需要に伴い、市場の動向は複雑さとスピードを増しており、従来以上に高度な分析力、語学力、交渉力、そして柔軟な思考が求められています。
-            
-            松本様がこれまでに培われてきたスキルセットや国際的な視点、また学問的バックグラウンドは、当部門の取り組む事業領域との整合性が高く、今後の航空金融分野において大きく活躍いただける素養をお持ちであると感じております。
-            """,
-            isFromCurrentUser: false,
-            timestamp: Date().addingTimeInterval(-3600)
-        )
-        
-        let message2 = ChatMessage(
-            text: """
-            もちろん、現時点で正式な選考への参加をお願いするものではなく、あくまでも当社事業およびキャリアパスのご紹介が目的でございます。もしご関心をお持ちいただけましたら、
-            ・事業概要のご説明
-            ・キャリア形成の方向性
-            ・若手社員の業務内容
-            などをお伝えするオンライン形式でのカジュアルミーティングを設定させていただければ幸いです。
-            
-            ご多用のところ恐れ入りますが、ご興味をお持ちいただけましたら、可能なお日にちを数候補お知らせください。日程は柔軟に調整させていただきます。
-            
-            末筆ながら、松本様の今後のさらなるご活躍を心よりお祈り申し上げるとともに、少しでもお話しする機会を頂戴できますと幸いです。
-            
-            何卒よろしくお願い申し上げます。
-            
-            伊藤忠商事株式会社
-            人事部　採用係
-            """,
-            isFromCurrentUser: false,
-            timestamp: Date().addingTimeInterval(-3500)
-        )
-        
-        messages = [message1, message2]
-        saveMessages()
-    }
-    
-    func sendMessage(_ text: String) {
-        let newMessage = ChatMessage(text: text, isFromCurrentUser: true)
-        messages.append(newMessage)
-        saveMessages()
-    }
-    
-    func acceptScout() {
-        isAccepted = true
-        saveAcceptanceStatus()
-    }
-    
-    func resetDemo() {
-        messages.removeAll()
-        isAccepted = false
-        addPlaceholderMessages()
-        saveAcceptanceStatus()
-    }
-    
-    private func saveMessages() {
-        if let encoded = try? JSONEncoder().encode(messages) {
-            UserDefaults.standard.set(encoded, forKey: storageKey)
-        }
-    }
-    
-    private func loadMessages() {
-        if let data = UserDefaults.standard.data(forKey: storageKey),
-           let decoded = try? JSONDecoder().decode([ChatMessage].self, from: data) {
-            messages = decoded
-        }
-    }
-    
-    private func saveAcceptanceStatus() {
-        UserDefaults.standard.set(isAccepted, forKey: acceptanceKey)
-    }
-    
-    private func loadAcceptanceStatus() {
-        isAccepted = UserDefaults.standard.bool(forKey: acceptanceKey)
-    }
+struct ConversationUserProfile {
+    var uid: String
+    var fullName: String
+    var photoURL: String?
 }
 
-// MARK: - Message Bubble View
-struct MessageBubble: View {
-    let message: ChatMessage
-    let previousMessage: ChatMessage?
-    let isLastMessage: Bool
-    
-    // Check if this message is within 1 minute of the previous message from the same sender
-    private var shouldShowTimestamp: Bool {
-        // Always show timestamp for the last message
-        if isLastMessage { return true }
-        
-        guard let previous = previousMessage else { return true }
-        guard previous.isFromCurrentUser == message.isFromCurrentUser else { return true }
-        
-        let timeDifference = message.timestamp.timeIntervalSince(previous.timestamp)
-        return timeDifference >= 60 // 60 seconds = 1 minute
-    }
-    
-    private var shouldShowAvatar: Bool {
-        guard let previous = previousMessage else { return true }
-        guard previous.isFromCurrentUser == message.isFromCurrentUser else { return true }
-        
-        let timeDifference = message.timestamp.timeIntervalSince(previous.timestamp)
-        return timeDifference >= 60
-    }
-    
-    var body: some View {
-        HStack(alignment: .bottom, spacing: 8) {
-            // Profile picture for sender (left side)
-            if !message.isFromCurrentUser {
-                if shouldShowAvatar {
-                    Image("Itochu")
-                        .resizable()
-                        .scaledToFill()
-                        .frame(width: 40, height: 40)
-                        .clipShape(Circle())
-                        .overlay(
-                            Circle()
-                                .stroke(Color(.systemGray4), lineWidth: 0.5)
-                        )
-                } else {
-                    // Spacer to maintain alignment when avatar is hidden
-                    Color.clear
-                        .frame(width: 40, height: 40)
-                }
-            }
-            
-            if message.isFromCurrentUser {
-                Spacer()
-            }
-            
-            VStack(alignment: message.isFromCurrentUser ? .trailing : .leading, spacing: 4) {
-                Text(message.text)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .glassEffect(.clear.tint(message.isFromCurrentUser ? Color.accentColor : Color(.clear)), in: .rect(cornerRadius: 18))
-                    //.background(message.isFromCurrentUser ? Color.accentColor : Color(.systemGray5))
-                    .foregroundColor(message.isFromCurrentUser ? .white : .primary)
-                    //.clipShape(RoundedRectangle(cornerRadius: 18))
-                
-                if shouldShowTimestamp {
-                    Text(message.timestamp, style: .time)
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                        .padding(.horizontal, 4)
-                }
-            }
-            .frame(maxWidth: 280, alignment: message.isFromCurrentUser ? .trailing : .leading)
-            
-            if !message.isFromCurrentUser {
-                Spacer()
-            }
-        }
-    }
+struct ConversationMessage: Identifiable, Equatable {
+    var id: String
+    var senderUID: String
+    var text: String
+    var timestamp: Date
+    var editedAt: Date? = nil
+    var isDeleted: Bool = false
+    var readByCount: Int = 1
+    var senderDisplayName: String? = nil
+    var senderIcon: String? = nil
+    var inlineRecruitmentCard: Recruitment? = nil
 }
 
-// MARK: - Main Message Details View
-struct MessageDetailsView: View {
-    let chat: Chat
-    @State private var messageStorage = MessageStorage()
-    @State private var messageText = ""
-    @State private var showTextField = false
-    @State private var showResetDialog = false
-    @FocusState private var isTextFieldFocused: Bool
+// MARK: - Messages Chat View
+
+struct MessagesChatView: View {
+    let conversation: ChatConversation
+    let currentUserUID: String
+
     @Environment(\.dismiss) private var dismiss
-    
-    // Add access to ChatStore to handle decline
-    var onDecline: (() -> Void)?
-    
+    @FocusState private var isTextFieldFocused: Bool
+
+    @State private var messages: [ConversationMessage] = []
+    @State private var messageText: String = ""
+    @State private var editingMessageID: String? = nil
+
+    @State private var otherUserProfile: ConversationUserProfile? = nil
+    @State private var isMuted: Bool = false
+    @State private var showingCertifiedPopover: Bool = false
+
+    @State private var keyboardHeight: CGFloat = 0
+    @State private var scrollProxy: ScrollViewProxy?
+    @State private var hasScrolledToBottom = false
+
+    init(conversation: ChatConversation, currentUserUID: String) {
+        self.conversation = conversation
+        self.currentUserUID = currentUserUID
+    }
+
+    // MARK: Timestamp & spacing helpers
+
+    private func shouldShowTimestampForMessage(at index: Int) -> Bool {
+        guard index < messages.count else { return true }
+
+        let current = messages[index]
+
+        if index == messages.count - 1 { return true }
+        if index == 0 { return true }
+
+        let previous = messages[index - 1]
+
+        if current.senderUID != previous.senderUID { return true }
+
+        let delta = current.timestamp.timeIntervalSince(previous.timestamp)
+        return delta > 60
+    }
+
+    private func spacingForMessage(at index: Int) -> CGFloat {
+        guard index < messages.count && index > 0 else { return 12 }
+
+        let current = messages[index]
+        let previous = messages[index - 1]
+
+        let isSameSender = current.senderUID == previous.senderUID
+        let delta = current.timestamp.timeIntervalSince(previous.timestamp)
+        let isWithinOneMinute = delta <= 60
+
+        return (isSameSender && isWithinOneMinute) ? 4 : 12
+    }
+
+    @ViewBuilder
+    private func messageBubbleContent(for message: ConversationMessage, at index: Int) -> some View {
+        let showTimestamp = shouldShowTimestampForMessage(at: index)
+        let bottomSpacing = spacingForMessage(at: index + 1)
+
+        ConversationBubbleView(
+            message: message,
+            isFromCurrentUser: message.senderUID == currentUserUID,
+            otherUserProfile: otherUserProfile,
+            shouldShowTimestamp: showTimestamp,
+            onEdit: {
+                startEditing(message)
+            },
+            onUndoSend: {
+                undoSend(message)
+            }
+        )
+        .id(message.id)
+        .padding(.bottom, bottomSpacing)
+        .scrollTransition(.interactive(timingCurve: .easeInOut), axis: .vertical) { content, phase in
+            content.scaleEffect(phase.isIdentity ? 1 : 0.95 + (0.05 * phase.value))
+        }
+    }
+
+    private func scrollToBottomIfNeeded(proxy: ScrollViewProxy) {
+        guard let last = messages.last else { return }
+
+        if hasScrolledToBottom {
+            withAnimation {
+                proxy.scrollTo(last.id, anchor: .bottom)
+            }
+        } else {
+            proxy.scrollTo(last.id, anchor: .bottom)
+            hasScrolledToBottom = true
+        }
+    }
+
+    // MARK: Computed properties
+
+    private var senderDisplayName: String {
+        if let custom = messages.first(where: { $0.senderUID != currentUserUID })?.senderDisplayName {
+            return custom
+        }
+        return otherUserProfile?.fullName ?? "読み込み中"
+    }
+
+    private var senderIcon: String? {
+        if let custom = messages.first(where: { $0.senderUID != currentUserUID })?.senderIcon {
+            return custom
+        }
+        return otherUserProfile?.photoURL
+    }
+
+    // MARK: Actions
+
+    private func startEditing(_ message: ConversationMessage) {
+        guard !message.isDeleted else { return }
+        editingMessageID = message.id
+        messageText = message.text
+        isTextFieldFocused = true
+    }
+
+    private func cancelEditing() {
+        editingMessageID = nil
+        messageText = ""
+    }
+
+    private func sendOrEditMessage() {
+        let text = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !text.isEmpty else { return }
+
+        if let editingID = editingMessageID,
+           let idx = messages.firstIndex(where: { $0.id == editingID }) {
+            messages[idx].text = text
+            messages[idx].editedAt = Date()
+            editingMessageID = nil
+        } else {
+            let new = ConversationMessage(
+                id: UUID().uuidString,
+                senderUID: currentUserUID,
+                text: text,
+                timestamp: Date(),
+                editedAt: nil,
+                isDeleted: false,
+                readByCount: 1
+            )
+            messages.append(new)
+        }
+
+        messageText = ""
+    }
+
+    private func undoSend(_ message: ConversationMessage) {
+        guard let idx = messages.firstIndex(where: { $0.id == message.id }) else { return }
+        messages[idx].isDeleted = true
+    }
+
+    // MARK: Body
+
     var body: some View {
         VStack(spacing: 0) {
-            // Messages List
             ScrollViewReader { proxy in
                 ScrollView {
                     LazyVStack(spacing: 0) {
-                        ForEach(Array(messageStorage.messages.enumerated()), id: \.element.id) { index, message in
-                            let previousMessage = index > 0 ? messageStorage.messages[index - 1] : nil
-                            let isLastMessage = index == messageStorage.messages.count - 1
-                            let shouldReduceSpacing = previousMessage != nil && 
-                                                     previousMessage!.isFromCurrentUser == message.isFromCurrentUser &&
-                                                     message.timestamp.timeIntervalSince(previousMessage!.timestamp) < 60
-                            
-                            MessageBubble(message: message, previousMessage: previousMessage, isLastMessage: isLastMessage)
-                                .id(message.id)
-                                .padding(.top, shouldReduceSpacing ? 4 : 12)
+                        ForEach(Array(messages.enumerated()), id: \.element.id) { index, message in
+                            messageBubbleContent(for: message, at: index)
                         }
                     }
-                    .padding(.horizontal)
-                    .padding(.top)
-                    //.padding(.bottom, -30)
-                    .scrollTransition(
-                                                .interactive(timingCurve: .easeInOut),
-                                                axis: .vertical
-                                            ) { content, phase  in
-                                                let scaledContent = content.scaleEffect(phase.isIdentity ? 1 : 0.95 + (0.05 * phase.value))
-                                                
-                                                return scaledContent
-                                            }
+                    .padding()
                 }
-                .onChange(of: messageStorage.messages.count) { _, _ in
-                    if let lastMessage = messageStorage.messages.last {
+                .scrollDismissesKeyboard(.interactively)
+                .onChange(of: messages.count) { _, _ in
+                    scrollToBottomIfNeeded(proxy: proxy)
+                }
+                .onChange(of: isTextFieldFocused) { _, focused in
+                    if focused, let last = messages.last, hasScrolledToBottom {
                         withAnimation {
-                            proxy.scrollTo(lastMessage.id, anchor: .bottom)
+                            proxy.scrollTo(last.id, anchor: .bottom)
                         }
                     }
                 }
                 .onAppear {
-                    // Restore showTextField state based on acceptance status
-                    showTextField = messageStorage.isAccepted
-                    
-                    // Scroll to bottom after a brief delay to ensure layout is complete
-                    if let lastMessage = messageStorage.messages.last {
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                            proxy.scrollTo(lastMessage.id, anchor: .bottom)
-                        }
-                    }
+                    scrollProxy = proxy
                 }
-                .overlay {
-                    if !showTextField {
-                        ZStack {
-                            Rectangle()
-                                .fill(.ultraThinMaterial)
-                                .allowsHitTesting(true)
-                                .transition(.opacity)
-                                .ignoresSafeArea()
-                            Text("スカウトを開封して\nメッセージを確認")
-                                .font(.title)
-                                .fontWeight(.semibold)
-                                .foregroundColor(.secondary)
-                                .multilineTextAlignment(.center)
-                        }
-                    }
-                }
-            }
-            
-            // Message Input Bar (only shown after TEMPLATE button is tapped)
-            if showTextField {
-                HStack(spacing: 12) {
-                    // Text Field
-                    TextField("メッセージを入力...", text: $messageText, axis: .vertical)
-                        .textFieldStyle(.plain)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 8)
-                        .background(Color(.systemGray6))
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
-                        .focused($isTextFieldFocused)
-                        .lineLimit(1...5)
-                    
-                    // Send Button
-                    Button(action: sendMessage) {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundColor(messageText.isEmpty ? .gray : .accentColor)
-                    }
-                    .disabled(messageText.isEmpty)
-                }
-                .padding(.horizontal)
-                .padding(.vertical, 8)
-                .background(Color(.systemBackground))
-                .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
         .background(
             LinearGradient(
-                gradient: Gradient(colors: [Color.accentColor.opacity(0.2), Color.white, Color.white]),
+                colors: [Color.accentColor.opacity(0.2), Color(.systemBackground), Color(.systemBackground)],
                 startPoint: .top,
                 endPoint: .bottom
             )
             .ignoresSafeArea()
         )
-        //.navigationTitle(chat.companyName)
-        //.navigationBarTitleDisplayMode(.inline)
         .safeAreaBar(edge: .bottom) {
-            if !showTextField {
-                HStack(spacing: -20) {
-                    Button(action: {
-                        // Call the decline callback
-                        onDecline?()
-                        
-                        // Haptic feedback
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                        
-                        // Dismiss the view
-                        dismiss()
-                    }) {
-                        Text("承諾しない")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .foregroundColor(.red)
-                            .multilineTextAlignment(.center)
-                    }
-                    .buttonStyle(.glass)
-                    .padding(.horizontal)
-                    Button(action: {
-                        // Play success haptic feedback
-                        UINotificationFeedbackGenerator().notificationOccurred(.success)
-                        
-                        // Save acceptance status
-                        messageStorage.acceptScout()
-                        
-                        withAnimation {
-                            showTextField = true
+            GlassEffectContainer {
+                HStack {
+                    TextField(
+                        editingMessageID == nil ? "メッセージを入力" : "メッセージを編集",
+                        text: $messageText,
+                        axis: .vertical
+                    )
+                    .textFieldStyle(.plain)
+                    .padding(10)
+                    .padding(.leading, 4)
+                    .glassEffect(.regular.interactive())
+                    .focused($isTextFieldFocused)
+                    .lineLimit(1...7)
+
+                    if editingMessageID != nil {
+                        Button {
+                            cancelEditing()
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.title2)
+                                .fontWeight(.semibold)
+                                .foregroundColor(.red)
                         }
-                    }) {
-                        Text("スカウトを開封")
-                            .font(.headline)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 10)
-                            .foregroundColor(.white)
-                            .multilineTextAlignment(.center)
+                        .padding(10)
+                        .glassEffect(.regular.interactive(), in: Circle())
                     }
-                    .buttonStyle(.glassProminent)
-                    .padding(.horizontal)
+
+                    Button {
+                        let impact = UIImpactFeedbackGenerator(style: .rigid)
+                        impact.impactOccurred()
+                        sendOrEditMessage()
+                        isTextFieldFocused = true
+                    } label: {
+                        Image(systemName: editingMessageID == nil ? "arrow.up" : "checkmark")
+                            .font(.title2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .gray : .black)
+                            .padding(.all, 10)
+                            .glassEffect(.regular.tint(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? .clear : .accentColor)
+                                    .interactive(),
+                                in: Circle()
+                            )
+                    }
+                    .disabled(messageText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 16)
+            .padding(.bottom, keyboardHeight == 0 ? 0 : 10)
         }
         .toolbar {
             ToolbarItem(placement: .principal) {
                 ZStack {
-                    HStack(spacing: 4) {
-                        Text(chat.companyName)
-                            .font(.headline)
-                        Image(systemName: "chevron.compact.right")
-                            .font(.caption)
-                            .fontWeight(.bold)
-                            .foregroundStyle(.secondary)
-                    }
-                        .padding(.all, 8)
+                    Button {
+                        showingCertifiedPopover = true
+                    } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.caption)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.secondary)
+                                .padding(.leading, -4)
+                            Text(senderDisplayName.prefix(10))
+                                .font(.headline)
+                            Text("...")
+                                .font(.headline)
+                                .padding(.leading, -6)
+                        }
+                        .padding(.all, 6.5)
                         .padding(.horizontal, 6)
                         .glassEffect(.regular.interactive())
-                        .offset(y: 55)
-                    Button(action: { }) {
-                        Image("Itochu")
-                            .resizable()
-                            .frame(width: 70, height: 70)
-                            .clipShape(Circle())
-                            .shadow(color: .black.opacity(0.1), radius: 12)
+                    }
+                    .buttonStyle(.plain)
+                    .popover(isPresented: $showingCertifiedPopover) {
+                        VStack(spacing: 8) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .font(.title)
+                                .foregroundStyle(.blue)
+                            Text(senderDisplayName)
+                                .font(.headline)
+                            Text("認証されたビジネスです。")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding()
+                        .presentationCompactAdaptation(.popover)
+                    }
+                    .offset(y: 54)
+
+                    Button(action: {}) {
+                        ZStack {
+                            Circle()
+                                .fill(Color(.systemGray5))
+                                .frame(width: 60, height: 60)
+                                .shimmering()
+                                .clipShape(Circle())
+
+                            if let iconURL = senderIcon, let url = URL(string: iconURL) {
+                                AsyncImage(url: url) { phase in
+                                    switch phase {
+                                    case .empty:
+                                        ProgressView()
+                                    case .success(let image):
+                                        image
+                                            .resizable()
+                                            .aspectRatio(contentMode: .fill)
+                                            .frame(width: 60, height: 60)
+                                            .clipShape(Circle())
+                                    case .failure:
+                                        Image("Solvvy")
+                                            .resizable()
+                                            .frame(width: 60, height: 60)
+                                    @unknown default:
+                                        Color.clear
+                                    }
+                                }
+                            } else {
+                                Image(systemName: " ")
+                                    .resizable()
+                                    .frame(width: 60, height: 60)
+                            }
+                        }
+                        .shadow(color: .black.opacity(0.1), radius: 12)
                     }
                     .offset(y: 12)
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button(action: {
-                    showResetDialog = true
-                }) {
+
+            ToolbarItem(placement: .navigationBarTrailing) {
+                Menu {
+                    Button {
+                        isMuted.toggle()
+                    } label: {
+                        Label(isMuted ? "ミュートを解除" : "ミュート", systemImage: isMuted ? "speaker.wave.2" : "speaker.slash")
+                    }
+
+                    Divider()
+
+                    Button(role: .destructive) {
+                        // UI-only: block action placeholder
+                    } label: {
+                        Label("ブロック", systemImage: "hand.raised")
+                    }
+
+                    Button(role: .destructive) {
+                        dismiss()
+                    } label: {
+                        Label("会話を削除", systemImage: "trash")
+                    }
+                } label: {
                     Image(systemName: "ellipsis")
                 }
             }
         }
-        .confirmationDialog("", isPresented: $showResetDialog) {
-            Button("デモをリセット", role: .destructive) {
-                withAnimation {
-                    showTextField = false
-                    messageStorage.resetDemo()
+        .onAppear {
+            if messages.isEmpty {
+                otherUserProfile = ConversationUserProfile(uid: "other", fullName: "Solvvy株式会社 採用担当", photoURL: nil)
+
+                messages = [
+                    ConversationMessage(
+                        id: UUID().uuidString,
+                        senderUID: "other",
+                        text: """
+松本知大さま、こんにちは！
+Solvvy株式会社吉丸でございます。
+
+先日はPercify就活EXPOにてありがとうございました！
+松本知大さまにとって有意義なお時間になっておりましたら幸いです。
+
+EXPOでもお伝えしたコンサル選考対策セミナーに加え、
+新たに役員＆新卒入社社員と話せるポジション別説明会を開催いたします！ぜひご参加ください！
+""",
+                        timestamp: Date().addingTimeInterval(-3600),
+                        editedAt: nil,
+                        isDeleted: false,
+                        readByCount: 2,
+                        senderDisplayName: "Solvvy株式会社",
+                        senderIcon: nil
+                    ),
+                    ConversationMessage(
+                        id: UUID().uuidString,
+                        senderUID: "other",
+                        text: "",
+                        timestamp: Date().addingTimeInterval(-3480),
+                        editedAt: nil,
+                        isDeleted: false,
+                        readByCount: 2,
+                        senderDisplayName: "Solvvy株式会社",
+                        senderIcon: nil,
+                        inlineRecruitmentCard: Recruitment(
+                            companyName: "Solvvy株式会社",
+                            companyLogo: "Solvvy",
+                            badgeText: "Percify特別選考",
+                            titleText: "コンサル志望学生向け: 【金融×IT】を学べる3DAYインターン",
+                            industryLeft: "Industry",
+                            industryRight: "コンサルティング・金融",
+                            typeLeft: "Type",
+                            typeRight: "インターン",
+                            pay1Label: "Pay1",
+                            pay1Value: "320",
+                            pay2Label: "Pay2",
+                            pay2Value: "1120",
+                            tag1: "#上場企業",
+                            tag2: "#福利厚生充実",
+                            tag3: "#Percify特別選考",
+                            deadline: "あと14日",
+                            classification: "インターン",
+                            headerImageURL: URL(string: "https://paiza-webapp.s3.ap-northeast-1.amazonaws.com/recruiter/5427/photo_top/large-3e64bc594b80bd45570a4fb1667eef8f.jpg")!,
+                            location: "出社"
+                        )
+                    ),
+                    ConversationMessage(
+                        id: UUID().uuidString,
+                        senderUID: currentUserUID,
+                        text: "はい、参加を希望します。",
+                        timestamp: Date().addingTimeInterval(-3500),
+                        editedAt: nil,
+                        isDeleted: false,
+                        readByCount: 1
+                    )
+                ]
+            }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { notification in
+            if let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect {
+                keyboardHeight = keyboardFrame.height
+
+                if let proxy = scrollProxy, let last = messages.last, hasScrolledToBottom {
+                    withAnimation(.easeOut(duration: 0.25)) {
+                        proxy.scrollTo(last.id, anchor: .bottom)
+                    }
                 }
             }
-            Button("キャンセル", role: .cancel) {}
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillHideNotification)) { _ in
+            keyboardHeight = 0
         }
     }
-    
-    private func sendMessage() {
-        let trimmedText = messageText.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedText.isEmpty else { return }
-        
-        messageStorage.sendMessage(trimmedText)
-        messageText = ""
+}
+
+// MARK: - Message Details View (entry point used by MessagesView)
+
+struct MessageDetailsView: View {
+    let chat: Chat
+    var onDecline: (() -> Void)?
+
+    var body: some View {
+        MessagesChatView(
+            conversation: ChatConversation(
+                id: chat.id.uuidString,
+                participants: ["currentUser", "other"],
+                createdAt: Date()
+            ),
+            currentUserUID: "currentUser"
+        )
+    }
+}
+
+// MARK: - Conversation Bubble View
+
+struct ConversationBubbleView: View {
+    let message: ConversationMessage
+    let isFromCurrentUser: Bool
+    let otherUserProfile: ConversationUserProfile?
+    let shouldShowTimestamp: Bool
+    let onEdit: () -> Void
+    let onUndoSend: () -> Void
+
+    @State private var isSingleLine = false
+
+    private var canEdit: Bool {
+        isFromCurrentUser && !message.isDeleted && message.timestamp.timeIntervalSinceNow > -900
+    }
+
+    private var canUndoSend: Bool {
+        isFromCurrentUser && !message.isDeleted
+    }
+
+    var body: some View {
+        HStack {
+            if isFromCurrentUser {
+                Spacer(minLength: 60)
+            }
+
+            VStack(alignment: isFromCurrentUser ? .trailing : .leading, spacing: 4) {
+                if !isFromCurrentUser, let profile = otherUserProfile {
+                    Text(profile.fullName)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+
+                if message.isDeleted {
+                    Text("このメッセージは削除されました")
+                        .font(.body)
+                        .italic()
+                        .foregroundColor(.secondary)
+                        .padding(12)
+                        .background(Color(.systemGray5))
+                        .cornerRadius(100)
+                } else if !message.text.isEmpty {
+                    Text(message.text)
+                        .font(.body)
+                        .padding(12)
+                        .background(isFromCurrentUser ? Color.accentColor.opacity(0.5) : Color(.systemGray5))
+                        .foregroundColor(.primary)
+                        .clipShape(isSingleLine ? AnyShape(Capsule()) : AnyShape(RoundedRectangle(cornerRadius: 18)))
+                        .background(
+                            GeometryReader { geometry in
+                                Color.clear
+                                    .onAppear {
+                                        isSingleLine = geometry.size.height <= 44
+                                    }
+                            }
+                        )
+                        .contextMenu {
+                            Button {
+                                UIPasteboard.general.string = message.text
+                            } label: {
+                                Label("コピー", systemImage: "doc.on.doc")
+                            }
+
+                            if canEdit {
+                                Button {
+                                    onEdit()
+                                } label: {
+                                    Label("編集", systemImage: "pencil")
+                                }
+                            }
+
+                            if canUndoSend {
+                                Button(role: .destructive) {
+                                    onUndoSend()
+                                } label: {
+                                    Label("送信を取り消す", systemImage: "arrow.uturn.backward")
+                                }
+                            }
+                        }
+                }
+
+                if let recruitment = message.inlineRecruitmentCard {
+                    InlineRecruitmentCardView(recruitment: recruitment)
+                        .frame(maxWidth: 280)
+                }
+
+                if shouldShowTimestamp {
+                    HStack(spacing: 4) {
+                        Text(message.timestamp, style: .time)
+                            .font(.caption2)
+                            .foregroundColor(.secondary)
+
+                        if message.editedAt != nil {
+                            Text("編集済み")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+
+                        if isFromCurrentUser && !message.isDeleted {
+                            Text(message.readByCount > 1 ? "既読" : "配信済み")
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+
+            if !isFromCurrentUser {
+                Spacer(minLength: 60)
+            }
+        }
+    }
+}
+
+// MARK: - Inline Recruitment Card View
+
+struct InlineRecruitmentCardView: View {
+    let recruitment: Recruitment
+
+    @State private var imageOpacity: Double = 0
+    @State private var showDetails = false
+    @Namespace private var transition
+
+    var body: some View {
+        Button {
+            showDetails = true
+        } label: {
+            VStack(alignment: .leading, spacing: 0) {
+                // Header image
+                ZStack(alignment: .topTrailing) {
+                    AsyncImage(url: recruitment.headerImageURL) { phase in
+                        switch phase {
+                        case .empty:
+                            Color(.systemGray5)
+                                .shimmering()
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .scaledToFill()
+                                .opacity(imageOpacity)
+                                .onAppear {
+                                    withAnimation(.easeIn(duration: 0.3)) {
+                                        imageOpacity = 1
+                                    }
+                                }
+                        case .failure:
+                            Color(.systemGray5)
+                        @unknown default:
+                            Color.clear
+                        }
+                    }
+                    .frame(height: 110)
+                    .clipped()
+
+                    // Badge
+                    HStack(spacing: 4) {
+                        Image("LogoSmall")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 12, height: 15)
+                        Text(recruitment.badgeText)
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .lineLimit(1)
+                    }
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(
+                        Capsule()
+                            .fill(Color.purple)
+                            .overlay(Capsule().strokeBorder(Color.white.opacity(0.3), lineWidth: 0.5))
+                    )
+                    .padding(8)
+                }
+
+                // Card details
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 10) {
+                        Image(recruitment.companyLogo)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 36, height: 36)
+                            .clipShape(Circle())
+                            .overlay(Circle().strokeBorder(Color(.systemGray4), lineWidth: 0.5))
+
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text(recruitment.titleText)
+                                .font(.footnote)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.primary)
+                                .lineLimit(2)
+                            Text(recruitment.companyName)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+
+                    Divider()
+
+                    HStack(spacing: 0) {
+                        VStack(alignment: .leading, spacing: 1) {
+                            Text("新卒年収")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            HStack(alignment: .bottom, spacing: 1) {
+                                Text(recruitment.pay1Value)
+                                    .font(.subheadline)
+                                    .fontWeight(.heavy)
+                                Text("万円")
+                                    .font(.caption2)
+                                    .fontWeight(.semibold)
+                                    .padding(.bottom, 1)
+                            }
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 1) {
+                            Text("30歳年収")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                            HStack(alignment: .bottom, spacing: 1) {
+                                Text(recruitment.pay2Value)
+                                    .font(.subheadline)
+                                    .fontWeight(.heavy)
+                                Text("万円")
+                                    .font(.caption2)
+                                    .fontWeight(.semibold)
+                                    .padding(.bottom, 1)
+                            }
+                        }
+                        Spacer()
+                        Text(recruitment.classification)
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .foregroundColor(.accentColor)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(Capsule().fill(.thinMaterial))
+                    }
+
+                    HStack(spacing: 6) {
+                        ForEach([recruitment.tag1, recruitment.tag2, recruitment.tag3], id: \.self) { tag in
+                            Text(tag)
+                                .font(.caption2)
+                                .lineLimit(1)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Capsule().fill(Color(.systemGray6)))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .padding(10)
+                .background(Color(.systemBackground))
+
+                // Entry button
+                Button {
+                    showDetails = true
+                } label: {
+                    Text("エントリー")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                        .foregroundColor(.white)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 14)
+                        .background(
+                            LinearGradient(
+                                colors: [Color.accentColor, Color.accentColor.opacity(0.9)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .buttonStyle(.plain)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .strokeBorder(Color(.systemGray4), lineWidth: 0.5)
+        )
+        .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 2)
+        .matchedTransitionSource(id: "inlineCard_\(recruitment.id)", in: transition)
+        .fullScreenCover(isPresented: $showDetails) {
+            EventDetailsView(
+                jobID: recruitment.id.uuidString,
+                imageURL: recruitment.headerImageURL,
+                eikenRequired: "2級以上",
+                toeicRequired: "600点以上",
+                companyLogo: recruitment.companyLogo,
+                title: recruitment.titleText,
+                businessName: recruitment.companyName,
+                stationName: recruitment.location,
+                jobDuration: "3ヶ月〜長期",
+                roleKind: recruitment.typeRight,
+                payHourly: recruitment.pay1Value,
+                payAdded: recruitment.pay2Value
+            )
+            .navigationTransition(.zoom(sourceID: "inlineCard_\(recruitment.id)", in: transition))
+        }
+    }
+}
+
+// MARK: - Type-erased shape helper
+
+struct AnyShape: Shape {
+    private let _path: @Sendable (CGRect) -> Path
+
+    init<S: Shape>(_ shape: S) {
+        _path = { rect in shape.path(in: rect) }
+    }
+
+    func path(in rect: CGRect) -> Path {
+        _path(rect)
     }
 }
 
 #Preview {
     NavigationStack {
-        MessageDetailsView(chat: Chat(
-            companyName: "伊藤忠商事株式会社",
-            companyLogo: "Itochu",
-            badge: .priority,
-            messagePreview: "松本さん、ぜひ弊社の航空機リース事業部で世界を舞台に活躍しませんか？",
-            timestamp: "火曜日",
-            isUnread: true,
-            isPriority: true
-        ))
+        MessagesChatView(
+            conversation: ChatConversation(
+                id: "preview",
+                participants: ["user1", "user2"],
+                createdAt: Date()
+            ),
+            currentUserUID: "user1"
+        )
     }
 }
