@@ -49,6 +49,26 @@ struct DiscoverView: View {
         }
     }
 
+    @ViewBuilder
+    private func cardView(for cardType: CardType) -> some View {
+        switch cardType {
+        case .recruitment(let item):
+            RecruitmentCardView(
+                recruitment: item,
+                onLike: { liked in handleSwipe(result: .like, item: liked) },
+                onDislike: { disliked in handleSwipe(result: .dislike, item: disliked) }
+            )
+        case .internship(let item):
+            InternshipCardView(
+                recruitment: item,
+                onLike: { liked in handleSwipe(result: .like, item: liked) },
+                onDislike: { disliked in handleSwipe(result: .dislike, item: disliked) }
+            )
+        case .hint:
+            HintCardView(onSwipe: handleHintSwipe)
+        }
+    }
+
     var body: some View {
         ZStack {
             LinearGradient(
@@ -109,20 +129,7 @@ struct DiscoverView: View {
                             let z = Double(index)
                             
                             Group {
-                                switch cardType {
-                                case .recruitment(let item):
-                                    RecruitmentCardView(
-                                        recruitment: item,
-                                        onLike: { liked in
-                                            handleSwipe(result: .like, item: liked)
-                                        },
-                                        onDislike: { disliked in
-                                            handleSwipe(result: .dislike, item: disliked)
-                                        }
-                                    )
-                                case .hint:
-                                    HintCardView(onSwipe: handleHintSwipe)
-                                }
+                                cardView(for: cardType)
                             }
                             //.clipped()
                             .padding(.horizontal)

@@ -2,6 +2,24 @@ import SwiftUI
 import Shimmer
 
 struct ProfileView: View {
+    @State private var selectedCard: ProfileCardItem?
+
+    private func settingNavigationLink(icon: String, title: String, gradientColors: [Color]) -> some View {
+        NavigationLink {
+            ProfileSettingItemPlaceholderView(
+                icon: icon,
+                title: title,
+                gradientColors: gradientColors
+            )
+        } label: {
+            SettingRowView(
+                icon: icon,
+                title: title,
+                gradientColors: gradientColors
+            )
+        }
+    }
+
     var body: some View {
         NavigationStack {
             List {
@@ -46,61 +64,81 @@ struct ProfileView: View {
                 Section {
                     VStack(spacing: 10) {
                         HStack(alignment: .center, spacing: 8) {
-                            VStack(spacing: 10) {
-                                Image(systemName: "heart.circle.fill")
-                                    .font(.largeTitle)
-                                    .foregroundColor(.accentColor)
-                                    .symbolRenderingMode(.hierarchical)
-                                Text("お気に入り済み")
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.secondary)
+                            Button {
+                                selectedCard = ProfileCardItem(icon: "heart.circle.fill", title: "お気に入り済み")
+                            } label: {
+                                VStack(spacing: 10) {
+                                    Image(systemName: "heart.circle.fill")
+                                        .font(.largeTitle)
+                                        .foregroundColor(.accentColor)
+                                        .symbolRenderingMode(.hierarchical)
+                                    Text("お気に入り済み")
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.secondary)
+                                }
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .padding(.vertical, 12)
+                                .background(RoundedRectangle(cornerRadius: 24).fill(Color(.systemBackground)))
                             }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .padding(.vertical, 12)
-                            .background(RoundedRectangle(cornerRadius: 24).fill(Color(.systemBackground)))
-                            VStack(spacing: 10) {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.largeTitle)
-                                    .foregroundColor(.accentColor)
-                                    .symbolRenderingMode(.hierarchical)
-                                Text("エントリー済み")
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.secondary)
+                            .buttonStyle(.plain)
+                            Button {
+                                selectedCard = ProfileCardItem(icon: "checkmark.circle.fill", title: "エントリー済み")
+                            } label: {
+                                VStack(spacing: 10) {
+                                    Image(systemName: "checkmark.circle.fill")
+                                        .font(.largeTitle)
+                                        .foregroundColor(.accentColor)
+                                        .symbolRenderingMode(.hierarchical)
+                                    Text("エントリー済み")
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.secondary)
+                                }
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .padding(.vertical, 12)
+                                .background(RoundedRectangle(cornerRadius: 24).fill(Color(.systemBackground)))
                             }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .padding(.vertical, 12)
-                            .background(RoundedRectangle(cornerRadius: 24).fill(Color(.systemBackground)))
-                            VStack(spacing: 10) {
-                                Image(systemName: "building.2.fill")
-                                    .font(.largeTitle)
-                                    .foregroundColor(.accentColor)
-                                    .symbolRenderingMode(.hierarchical)
-                                Text("あなたの企業一覧")
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.secondary)
+                            .buttonStyle(.plain)
+                            Button {
+                                selectedCard = ProfileCardItem(icon: "building.2.fill", title: "あなたの企業一覧")
+                            } label: {
+                                VStack(spacing: 10) {
+                                    Image(systemName: "building.2.fill")
+                                        .font(.largeTitle)
+                                        .foregroundColor(.accentColor)
+                                        .symbolRenderingMode(.hierarchical)
+                                    Text("あなたの企業一覧")
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.secondary)
+                                }
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .padding(.vertical, 12)
+                                .background(RoundedRectangle(cornerRadius: 24).fill(Color(.systemBackground)))
                             }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .padding(.vertical, 12)
-                            .background(RoundedRectangle(cornerRadius: 24).fill(Color(.systemBackground)))
+                            .buttonStyle(.plain)
                         }
                         HStack(alignment: .center, spacing: 8) {
-                            VStack(spacing: 10) {
-                                Image(systemName: "arrowtriangle.up.2.fill")
-                                    .font(.largeTitle)
-                                    .foregroundColor(.accentColor)
-                                    .symbolRenderingMode(.hierarchical)
-                                    .rotationEffect(.degrees(90))
-                                Text("スキップ済み")
-                                    .font(.caption)
-                                    .fontWeight(.semibold)
-                                    .foregroundColor(.secondary)
+                            Button {
+                                selectedCard = ProfileCardItem(icon: "arrowtriangle.up.2.fill", title: "スキップ済み")
+                            } label: {
+                                VStack(spacing: 10) {
+                                    Image(systemName: "arrowtriangle.up.2.fill")
+                                        .font(.largeTitle)
+                                        .foregroundColor(.accentColor)
+                                        .symbolRenderingMode(.hierarchical)
+                                        .rotationEffect(.degrees(90))
+                                    Text("スキップ済み")
+                                        .font(.caption)
+                                        .fontWeight(.semibold)
+                                        .foregroundColor(.secondary)
+                                }
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .padding(.vertical, 12)
+                                .background(RoundedRectangle(cornerRadius: 24).fill(Color(.systemBackground)))
                             }
-                            .frame(maxWidth: .infinity, maxHeight: .infinity)
-                            .padding(.vertical, 12)
-                            .background(RoundedRectangle(cornerRadius: 24).fill(Color(.systemBackground)))
+                            .buttonStyle(.plain)
                             .opacity(1.0)
                             VStack(spacing: 10) {
                                 Image(systemName: "list.bullet.clipboard.fill")
@@ -173,26 +211,79 @@ struct ProfileView: View {
                     .listRowBackground(LinearGradient(colors: [.accentColor.opacity(0.65), .accentColor], startPoint: .top, endPoint: .bottom))
                 }
                 Section {
-                    SettingRowView(
+                    settingNavigationLink(
                         icon: "bell.badge.fill",
                         title: "通知設定",
                         gradientColors: [.pink.opacity(0.5), .pink]
                     )
-                    SettingRowView(
-                        icon: "lock.shield.fill",
-                        title: "qufqwfebec",
-                        gradientColors: [.green.opacity(0.5), .green]
+                    settingNavigationLink(
+                        icon: "arrow.right.circle",
+                        title: "内定者アカウントに移行",
+                        gradientColors: [.blue.opacity(0.5), .blue]
                     )
-                    SettingRowView(
-                        icon: "gearshape.fill",
-                        title: "ggta",
+                    settingNavigationLink(
+                        icon: "text.page.fill",
+                        title: "利用規約",
                         gradientColors: [.gray.opacity(0.5), .gray]
                     )
+                    settingNavigationLink(
+                        icon: "hand.raised.fill",
+                        title: "プライバシーポリシー",
+                        gradientColors: [.blue.opacity(0.5), .blue]
+                    )
+                    settingNavigationLink(
+                        icon: "richtext.page.fill",
+                        title: "コンテンツポリシー",
+                        gradientColors: [.gray.opacity(0.5), .gray]
+                    )
+                    settingNavigationLink(
+                        icon: "building.2.fill",
+                        title: "運営会社",
+                        gradientColors: [.gray.opacity(0.5), .gray]
+                    )
+                    settingNavigationLink(
+                        icon: "checkmark.seal.text.page.fill",
+                        title: "オープンソースライセンス",
+                        gradientColors: [.gray.opacity(0.5), .gray]
+                    )
+                }
+                Section {
+                    settingNavigationLink(
+                        icon: "list.bullet",
+                        title: "よくあるご質問",
+                        gradientColors: [.gray.opacity(0.5), .gray]
+                    )
+                    settingNavigationLink(
+                        icon: "questionmark.bubble.fill",
+                        title: "お問い合わせ",
+                        gradientColors: [.purple.opacity(0.5), .purple]
+                    )
+                }
+                Section {
+                    HStack {
+                        Spacer()
+                        Text("サインアウト")
+                            .foregroundColor(.red)
+                        Spacer()
+                    }
+                    HStack {
+                        Spacer()
+                        Text("退会")
+                            .foregroundColor(.red)
+                        Spacer()
+                    }
                 }
             }
             .listStyle(.insetGrouped)
             .listSectionSpacing(.compact)
             .padding(.top, -20)
+            .navigationDestination(item: $selectedCard) { card in
+                ProfileSettingItemPlaceholderView(
+                    icon: card.icon,
+                    title: card.title,
+                    gradientColors: [.accentColor.opacity(0.5), .accentColor]
+                )
+            }
             .navigationTitle("マイページ")
             .toolbarTitleDisplayMode(.inlineLarge)
             .toolbar {
@@ -205,6 +296,12 @@ struct ProfileView: View {
             }
         }
     }
+}
+
+struct ProfileCardItem: Hashable, Identifiable {
+    let icon: String
+    let title: String
+    var id: String { title }
 }
 
 struct ArcTextBadgeView: View {
@@ -298,7 +395,7 @@ struct SettingRowView: View {
             Spacer()
             Image(systemName: "chevron.right")
                 .font(.subheadline)
-                .foregroundColor(.secondary.opacity(0.6))
+                .foregroundColor(.clear.opacity(0.6))
         }
     }
 }

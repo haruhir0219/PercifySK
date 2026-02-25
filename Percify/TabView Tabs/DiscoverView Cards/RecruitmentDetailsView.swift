@@ -386,7 +386,7 @@ struct RecruitmentDetailsView: View {
     }
 
     private var allTabs: [String] {
-        ["なにをやっているのか", "特別選考ルート", "仕事内容", "給与", "勤務時間、休日", "勤務地、転勤", "福利厚生", "選考ポイント", "同じ企業から"]
+        ["なにをやっているのか", "仕事内容", "給与", "勤務時間、休日", "勤務地、転勤", "福利厚生", "選考ポイント", "同じ企業から"]
     }
     
     @ViewBuilder
@@ -544,8 +544,6 @@ struct RecruitmentDetailsView: View {
                     tab5Content()
                 case "福利厚生":
                     tab6Content()
-                case "特別選考ルート":
-                    tab7Content()
                 case "選考ポイント":
                     tab8Content()
                 case "同じ企業から":
@@ -572,8 +570,6 @@ struct RecruitmentDetailsView: View {
             tab5Content()
         case "福利厚生":
             tab6Content()
-        case "特別選考ルート":
-            tab7Content()
         case "選考ポイント":
             tab8Content()
         case "同じ企業から":

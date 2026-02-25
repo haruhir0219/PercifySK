@@ -32,7 +32,7 @@ struct ConversationMessage: Identifiable, Equatable {
     var readByCount: Int = 1
     var senderDisplayName: String? = nil
     var senderIcon: String? = nil
-    var inlineRecruitmentCard: Recruitment? = nil
+    var inlineRecruitmentCards: [Recruitment] = []
 }
 
 // MARK: - Messages Chat View
@@ -374,6 +374,10 @@ struct MessagesChatView: View {
                             Circle()
                                 .fill(Color(.systemGray5))
                                 .frame(width: 60, height: 60)
+                                .clipShape(Circle())
+                            Circle()
+                                .fill(Color(.systemGray5))
+                                .frame(width: 60, height: 60)
                                 .shimmering()
                                 .clipShape(Circle())
 
@@ -469,27 +473,50 @@ struct MessagesChatView: View {
                         readByCount: 2,
                         senderDisplayName: "Solvvy株式会社",
                         senderIcon: nil,
-                        inlineRecruitmentCard: Recruitment(
-                            companyName: "Solvvy株式会社",
-                            companyLogo: "Solvvy",
-                            badgeText: "Percify特別選考",
-                            titleText: "コンサル志望学生向け: 【金融×IT】を学べる3DAYインターン",
-                            industryLeft: "Industry",
-                            industryRight: "コンサルティング・金融",
-                            typeLeft: "Type",
-                            typeRight: "インターン",
-                            pay1Label: "Pay1",
-                            pay1Value: "320",
-                            pay2Label: "Pay2",
-                            pay2Value: "1120",
-                            tag1: "#上場企業",
-                            tag2: "#福利厚生充実",
-                            tag3: "#Percify特別選考",
-                            deadline: "あと14日",
-                            classification: "インターン",
-                            headerImageURL: URL(string: "https://paiza-webapp.s3.ap-northeast-1.amazonaws.com/recruiter/5427/photo_top/large-3e64bc594b80bd45570a4fb1667eef8f.jpg")!,
-                            location: "出社"
-                        )
+                        inlineRecruitmentCards: [
+                            Recruitment(
+                                companyName: "Solvvy株式会社",
+                                companyLogo: "Solvvy",
+                                badgeText: "Percify特別選考",
+                                titleText: "コンサル志望学生向け: 【金融×IT】を学べる3DAYインターン",
+                                industryLeft: "Industry",
+                                industryRight: "コンサルティング・金融",
+                                typeLeft: "Type",
+                                typeRight: "インターン",
+                                pay1Label: "Pay1",
+                                pay1Value: "320",
+                                pay2Label: "Pay2",
+                                pay2Value: "1120",
+                                tag1: "#上場企業",
+                                tag2: "#福利厚生充実",
+                                tag3: "#Percify特別選考",
+                                deadline: "あと14日",
+                                classification: "インターン",
+                                headerImageURL: URL(string: "https://paiza-webapp.s3.ap-northeast-1.amazonaws.com/recruiter/5427/photo_top/large-3e64bc594b80bd45570a4fb1667eef8f.jpg")!,
+                                location: "出社"
+                            ),
+                            Recruitment(
+                                companyName: "Solvvy株式会社",
+                                companyLogo: "Solvvy",
+                                badgeText: "Percify特別選考",
+                                titleText: "役員＆新卒入社社員と話せるポジション別説明会",
+                                industryLeft: "Industry",
+                                industryRight: "コンサルティング・金融",
+                                typeLeft: "Type",
+                                typeRight: "説明会",
+                                pay1Label: "Pay1",
+                                pay1Value: "320",
+                                pay2Label: "Pay2",
+                                pay2Value: "1120",
+                                tag1: "#上場企業",
+                                tag2: "#福利厚生充実",
+                                tag3: "#Percify特別選考",
+                                deadline: "あと7日",
+                                classification: "説明会",
+                                headerImageURL: URL(string: "https://solvvy.co.jp/wp-content/themes/solvvy/assets/images/infographic/hero-image.jpg")!,
+                                location: "オンライン"
+                            )
+                        ]
                     ),
                 ]
             }
@@ -618,9 +645,16 @@ struct ConversationBubbleView: View {
                         }
                 }
 
-                if let recruitment = message.inlineRecruitmentCard {
-                    InlineRecruitmentCardView(recruitment: recruitment, onEntry: onEntry)
-                        .frame(maxWidth: 280)
+                if !message.inlineRecruitmentCards.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 10) {
+                            ForEach(message.inlineRecruitmentCards) { recruitment in
+                                InlineRecruitmentCardView(recruitment: recruitment, onEntry: onEntry)
+                                    .frame(width: 280)
+                            }
+                        }
+                    }
+                    .scrollClipDisabled()
                 }
 
                 if shouldShowTimestamp {

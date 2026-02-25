@@ -5,11 +5,14 @@ import Shimmer
 
 enum CardType: Identifiable, Equatable {
     case recruitment(Recruitment)
+    case internship(Recruitment)
     case hint
     
     var id: UUID {
         switch self {
         case .recruitment(let recruitment):
+            return recruitment.id
+        case .internship(let recruitment):
             return recruitment.id
         case .hint:
             return UUID() // Generate a unique ID for hint cards
@@ -67,6 +70,7 @@ class JobStore {
         guard initialCardCount > 0 else { return 0.0 }
         let recruitmentCardsRemaining = cards.filter {
             if case .recruitment = $0 { return true }
+            if case .internship = $0 { return true }
             return false
         }.count
         let cardsViewed = initialCardCount - recruitmentCardsRemaining
@@ -282,11 +286,43 @@ class JobStore {
             )
         ]
         
-        // Convert to CardType and set cards
-        cards = recruitmentCards.map { .recruitment($0) }
+        let internshipCards: [Recruitment] = [
+            Recruitment(
+                companyName: "Solvvy株式会社",
+                companyLogo: "Solvvy",
+                badgeText: "Percify特別選考",
+                titleText: "一部上場企業のSolvvyで、インサイドセールス営業の世界へ踏み出そう",
+                industryLeft: "Industry",
+                industryRight: "コンサルティング・金融",
+                typeLeft: "Type",
+                typeRight: "インターン",
+                pay1Label: "Pay1",
+                pay1Value: "1380",
+                pay2Label: "Pay2",
+                pay2Value: "74",
+                tag1: "#サマーインターン",
+                tag2: "#外資系企業",
+                tag3: "#エンジニア",
+                deadline: "あと18日",
+                classification: "インターン",
+                headerImageURL: URL(string: "https://solvvy.co.jp/wp-content/themes/solvvy/assets/images/business/strength-image02.png")!,
+                location: "渋谷オフィス"
+            )
+        ]
         
-        // Set the initial card count when data is first loaded
-        initialCardCount = recruitmentCards.count
+        // Convert to CardType and set cards
+        var allCards: [CardType] = recruitmentCards.map { .recruitment($0) }
+        
+        // Insert internship cards at random positions
+        for internship in internshipCards {
+            let randomIndex = Int.random(in: 0...allCards.count)
+            allCards.insert(.internship(internship), at: randomIndex)
+        }
+        
+        cards = allCards
+        
+        // Set the initial card count when data is first loaded (count all job cards)
+        initialCardCount = recruitmentCards.count + internshipCards.count
     }
     
     // MARK: - Actions
@@ -330,8 +366,14 @@ class JobStore {
             return
         }
         
-        // Otherwise, handle as a recruitment card
-        guard case .recruitment(let recruitment) = removed else { return }
+        // Otherwise, handle as a recruitment or internship card
+        let recruitment: Recruitment
+        switch removed {
+        case .recruitment(let r), .internship(let r):
+            recruitment = r
+        default:
+            return
+        }
         
         // Restore the card to the deck
         cards.append(removed)
@@ -395,10 +437,12 @@ class JobStore {
     
     private func removeCard(_ item: Recruitment, action: SwipeAction) {
         if let idx = cards.firstIndex(where: {
-            if case .recruitment(let recruitment) = $0, recruitment == item {
-                return true
+            switch $0 {
+            case .recruitment(let recruitment), .internship(let recruitment):
+                return recruitment == item
+            default:
+                return false
             }
-            return false
         }) {
             lastRemoved = cards.remove(at: idx)
             lastAction = action
@@ -423,6 +467,7 @@ class JobStore {
         // Update initial count to include newly added cards
         let recruitmentCount = cards.filter {
             if case .recruitment = $0 { return true }
+            if case .internship = $0 { return true }
             return false
         }.count
         initialCardCount = max(initialCardCount, recruitmentCount)
