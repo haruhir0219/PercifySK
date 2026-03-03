@@ -9,7 +9,7 @@ struct DiscoverView: View {
     @State private var isShowingMembership = false
     @State private var isShowingSkippedList = false
     @State private var isShowingLikedList = false
-    @State private var jobStore = JobStore()
+    @Bindable var jobStore: JobStore
     @State private var confettiTrigger: Int = 0
 
     private enum SwipeResult { case like, dislike }
@@ -311,6 +311,6 @@ struct DiscoverView: View {
 
 #Preview {
     NavigationStack {
-        DiscoverView()
+        DiscoverView(jobStore: JobStore())
     }
 }

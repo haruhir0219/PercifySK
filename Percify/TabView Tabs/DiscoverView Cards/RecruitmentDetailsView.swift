@@ -105,6 +105,7 @@ struct RecruitmentDetailsView: View {
 
     // UI State only
     @Environment(\.dismiss) private var dismiss
+    @Environment(JobStore.self) private var jobStore: JobStore?
     @State private var isFavorited = false
     @State private var wantsShare = false
     @State private var showApplySheet = false
@@ -1583,9 +1584,9 @@ struct RecruitmentDetailsView: View {
         //ToolbarItem(placement: .topBarTrailing) {
             //trailingToolbarButton
         //}
-        //ToolbarItemGroup(placement: .bottomBar) {
-            //bottomToolbarGroup
-        //}
+        ToolbarItemGroup(placement: .bottomBar) {
+            bottomToolbarGroup
+        }
     }
     
     private var leadingToolbarButton: some View {
@@ -1634,26 +1635,28 @@ struct RecruitmentDetailsView: View {
     
     @ViewBuilder
     private var bottomToolbarGroup: some View {
-        Button(action: {}) {
-            Label("Done", systemImage: "heart")
-        }
-        Button(action: {}) {
-            Label("Done", systemImage: "plus.square")
-        }
         Spacer()
         entryButton
     }
     
+    private var isFavoritedInStore: Bool {
+        jobStore?.isFavorited(jobID) ?? false
+    }
+    
     private var entryButton: some View {
-        Button(action: {}) {
-            Label {
-                Text("今すぐエントリー")
-                    .font(.headline)
-            } icon: {
-                Image(systemName: " ")
+        Button(action: {
+            jobStore?.toggleFavorite(jobID)
+        }) {
+            HStack(spacing: 6) {
+                Image(systemName: isFavoritedInStore ? "checkmark" : "heart")
+                    .padding(.leading, 4)
+                    .contentTransition(.symbolEffect(.replace))
+                Text(isFavoritedInStore ? "お気に入り済み" : "企業をお気に入りにする")
+                    .padding(.trailing, 4)
             }
+            .font(.body)
+            .animation(.default, value: isFavoritedInStore)
         }
-        .buttonStyle(.glassProminent)
     }
     
     private var applySheetContent: some View {

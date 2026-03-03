@@ -78,7 +78,8 @@ struct InternshipCardView: View {
                     jobDuration: "3ヶ月〜長期",
                     roleKind: recruitment.typeRight,
                     payHourly: recruitment.pay1Value,
-                    payAdded: recruitment.pay2Value
+                    payAdded: recruitment.pay2Value,
+                    badgeText: recruitment.badgeText
                 )
                     .navigationTransition(.zoom(sourceID: "card", in: transition))
             }

@@ -2,6 +2,7 @@ import SwiftUI
 import Charts
 import GlowGetter
 import Shimmer
+import SwiftGlass
 
 // MARK: - Visibility Preference Key
 
@@ -100,7 +101,8 @@ struct RecruitmentCardView: View {
                     jobDuration: "3ヶ月〜長期",
                     roleKind: recruitment.typeRight,
                     payHourly: recruitment.pay1Value,
-                    payAdded: recruitment.pay2Value
+                    payAdded: recruitment.pay2Value,
+                    badgeText: recruitment.badgeText
                 )
                     .navigationTransition(.zoom(sourceID: "card", in: transition))
             }
@@ -257,10 +259,11 @@ struct RecruitmentCardView: View {
             titleRow
             Divider()
             industryAndTypeRow
-                .padding(.bottom, -12)
+                .padding(.bottom, -20)
             salaryRow
                 .padding(.bottom, -4)
-            tagsRow
+                .padding(.vertical, 10)
+            //tagsRow
             Divider()
             bottomRow
                 .padding(.top, 8)
@@ -279,7 +282,7 @@ struct RecruitmentCardView: View {
                 }
                 VStack(alignment: .leading) {
                     Text(recruitment.titleText)
-                        .font(.title2)
+                        .font(.title3)
                         .fixedSize(horizontal: false, vertical: true)
                         .fontWeight(.semibold)
                         .foregroundStyle(.primary)
@@ -390,11 +393,11 @@ struct RecruitmentCardView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     labelChip(text: "新卒年収", chipColor: .purple)
                         .fontWeight(.semibold)
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: -2) {
                         HStack(alignment: .bottom, spacing: 2) {
                             Text(recruitment.pay1Value)
                                 .fixedSize(horizontal: true, vertical: true)
-                                .font(.title) 
+                                .font(.largeTitle)
                                 .fontWeight(.heavy)
                             Text("万円")
                                 .font(.title3)
@@ -417,11 +420,11 @@ struct RecruitmentCardView: View {
                 VStack(alignment: .trailing, spacing: 6) {
                     labelChip(text: "30歳年収", chipColor: .purple)
                         .fontWeight(.semibold)
-                    VStack(alignment: .trailing, spacing: 2) {
+                    VStack(alignment: .trailing, spacing: -2) {
                         HStack(alignment: .bottom, spacing: 2) {
                             Text(recruitment.pay2Value)
                                 .fixedSize(horizontal: true, vertical: true)
-                                .font(.title)
+                                .font(.largeTitle)
                                 .fontWeight(.heavy)
                             Text("万円")
                                 .font(.title3)
@@ -502,14 +505,25 @@ struct RecruitmentCardView: View {
                 .font(.headline)
                 .lineLimit(1)
                 .fixedSize(horizontal: true, vertical: false)
-                .foregroundColor(.accentColor)
+                .foregroundColor(.white)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(
-                    Capsule().fill(.thinMaterial)
+                    Capsule()
+                        .fill(Color.accentColor.opacity(0.85))
                         .overlay(
                             Capsule()
-                                .fill(Color.white.opacity(0.8))
+                                .fill(
+                                    LinearGradient(
+                                        colors: [.clear, .white.opacity(0.3)],
+                                        startPoint: .bottom,
+                                        endPoint: .top
+                                    )
+                                )
+                                .overlay(
+                                    Capsule()
+                                        .strokeBorder(.white.opacity(0.5), lineWidth: 1)
+                                )
                         )
                 )
                 .padding(.vertical, -5)

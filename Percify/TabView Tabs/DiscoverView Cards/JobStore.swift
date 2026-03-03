@@ -24,6 +24,18 @@ enum CardType: Identifiable, Equatable {
     }
 }
 
+// MARK: - Entered Job Model
+
+struct EnteredJob: Identifiable, Equatable {
+    let id = UUID()
+    let jobID: String
+    let companyName: String
+    let companyLogo: String
+    let title: String
+    let category: String
+    let enteredDate: Date
+}
+
 @Observable
 class JobStore {
     var cards: [CardType] = []
@@ -36,6 +48,15 @@ class JobStore {
     
     /// Array of recruitment cards that were skipped
     var skippedJobs: [Recruitment] = []
+    
+    /// Array of jobs the user has entered/applied to
+    var enteredJobs: [EnteredJob] = []
+    
+    /// Set of company IDs (jobID strings) that the user has favorited
+    var favoritedJobIDs: Set<String> = []
+    
+    /// Lookup table for all known recruitments (populated when cards are loaded)
+    private(set) var allRecruitments: [String: Recruitment] = [:]
     
     /// History of all swipes with their order and action
     private var swipeHistory: [(recruitment: Recruitment, action: SwipeAction)] = []
@@ -245,7 +266,7 @@ class JobStore {
             Recruitment(
                 companyName: "伊藤忠株式会社",
                 companyLogo: "Itochu",
-                badgeText: "Percify特別選考",
+                badgeText: "一般選考",
                 titleText: "伊藤忠株式会社の新規事業開拓チームでオセアニア鉄鉱石事業に携わる",
                 industryLeft: "Industry",
                 industryRight: "総合商社",
@@ -320,6 +341,11 @@ class JobStore {
         }
         
         cards = allCards
+        
+        // Populate the lookup table
+        for r in recruitmentCards + internshipCards {
+            allRecruitments[r.id.uuidString] = r
+        }
         
         // Set the initial card count when data is first loaded (count all job cards)
         initialCardCount = recruitmentCards.count + internshipCards.count
@@ -471,6 +497,44 @@ class JobStore {
             return false
         }.count
         initialCardCount = max(initialCardCount, recruitmentCount)
+    }
+    
+    /// Check if a job is favorited by its ID
+    func isFavorited(_ jobID: String) -> Bool {
+        favoritedJobIDs.contains(jobID)
+    }
+    
+    /// Toggle favorite status for a job
+    func toggleFavorite(_ jobID: String) {
+        if favoritedJobIDs.contains(jobID) {
+            favoritedJobIDs.remove(jobID)
+        } else {
+            favoritedJobIDs.insert(jobID)
+        }
+    }
+    
+    /// Record that the user entered/applied for a job
+    func enterJob(jobID: String, companyName: String, companyLogo: String, title: String, category: String) {
+        guard !enteredJobs.contains(where: { $0.jobID == jobID }) else { return }
+        let entry = EnteredJob(
+            jobID: jobID,
+            companyName: companyName,
+            companyLogo: companyLogo,
+            title: title,
+            category: category,
+            enteredDate: Date()
+        )
+        enteredJobs.append(entry)
+    }
+    
+    /// Check if user has already entered a job
+    func hasEntered(_ jobID: String) -> Bool {
+        enteredJobs.contains(where: { $0.jobID == jobID })
+    }
+    
+    /// Returns all recruitment data for favorited jobs
+    var favoritedRecruitments: [Recruitment] {
+        favoritedJobIDs.compactMap { allRecruitments[$0] }
     }
     
     /// Reset the store to initial state

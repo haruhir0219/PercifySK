@@ -299,22 +299,58 @@ struct SelectionFlowSection: View {
                         .fontWeight(.bold)
                         .foregroundColor(.white)
                         .frame(maxWidth: .infinity, alignment: .center)
-                    ForEach(0..<5, id: \.self) { index in
-                        if index < percifySteps.count {
-                            SelectionStepCard(
-                                stepNumber: index + 1,
-                                mainText: percifySteps[index].mainText,
-                                subText: percifySteps[index].subText
-                            )
+                    let maxCount = max(generalSteps.count, percifySteps.count)
+                    let stepOffset = maxCount - percifySteps.count
+                    ForEach(0..<maxCount, id: \.self) { (index: Int) in
+                        if index < stepOffset {
+                            if index == stepOffset - 1 {
+                                Text("Skip")
+                                    .font(.title3)
+                                    .fontDesign(.rounded)
+                                    .fontWeight(.heavy)
+                                    .foregroundColor(.white)
+                                    .offset(y: -8)
+                                    .frame(maxWidth: .infinity)
+                                    .frame(height: 75)
+                                    .background(
+                                        ChevronDownShape()
+                                            .fill(
+                                                LinearGradient(
+                                                    colors: [Color.accentColor, Color.accentColor.opacity(1.0)],
+                                                    startPoint: .bottom,
+                                                    endPoint: .top
+                                                )
+                                            )
+                                            .overlay(
+                                                LinearGradient(
+                                                    colors: [Color.white.opacity(0.3), Color.white.opacity(0.0)],
+                                                    startPoint: .top,
+                                                    endPoint: .bottom
+                                                )
+                                                .clipShape(ChevronDownShape())
+                                            )
+                                    )
+                                    .clipped()
+                            } else {
+                                Color.clear
+                                    .frame(height: 75)
+                            }
                         } else {
-                            RoundedRectangle(cornerRadius: 16)
-                                .fill(.ultraThinMaterial)
-                                .opacity(0)
-                                .frame(height: 75)
+                            SelectionStepCard(
+                                stepNumber: index - stepOffset + 1,
+                                mainText: percifySteps[index - stepOffset].mainText,
+                                subText: percifySteps[index - stepOffset].subText
+                            )
                         }
                     }
                 }
             }
+            Text("この選考では、Percify特別選考がご利用いただけます。弊社では、優遇として特別にESの免除をさせていただきます。また、利用者限定の社員座談会に参加していただけます。")
+                .font(.subheadline)
+                .foregroundColor(.white)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding()
+                .background(.ultraThinMaterial.opacity(0.4), in: RoundedRectangle(cornerRadius: 16))
             Button(action: {
                 showApplySheet = true
             }) {
@@ -330,6 +366,7 @@ struct SelectionFlowSection: View {
         }
         .listRowBackground(
             AnimatedMeshGradientBackground()
+                .overlay(Color.black.opacity(0.35))
         )
         .padding()
         .padding(.vertical, 4)
@@ -474,8 +511,10 @@ struct EventDetailsView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var isFavorited = false
     @State private var wantsShare = false
+    @Environment(JobStore.self) private var jobStore: JobStore?
     @State private var showApplySheet = false
     @State private var showAppliedSheet = false
+    @State private var showEntrySheet = false
     @State private var hasApplied = false // purely local UI state
     @State private var selectedTab = "なにをやっているのか"
     @State private var selectedJobCategory = "IT職"
@@ -536,6 +575,7 @@ struct EventDetailsView: View {
     let roleKind: String
     let payHourly: String
     let payAdded: String
+    var badgeText: String = "Percify特別選考"
 
     // Fixed display order for sections
     private let sectionOrder: [JobSectionKind] = [
@@ -709,12 +749,14 @@ struct EventDetailsView: View {
             Section {
                 EventOverviewSection()
             }
-            Section {
-                SelectionFlowSection(
-                    generalSteps: generalSelectionSteps,
-                    percifySteps: percifySelectionSteps,
-                    showApplySheet: $showApplySheet
-                )
+            if badgeText == "Percify特別選考" {
+                Section {
+                    SelectionFlowSection(
+                        generalSteps: generalSelectionSteps,
+                        percifySteps: percifySelectionSteps,
+                        showApplySheet: $showApplySheet
+                    )
+                }
             }
             Section {
                 EventRecommendedPersonSection()
@@ -2090,7 +2132,7 @@ struct EventDetailsView: View {
         }
     }
     
-    private var badgeText: some View {
+    private var badgeView: some View {
         HStack {
             Image("LogoSmall")
                 .resizable()
@@ -2229,7 +2271,17 @@ struct EventDetailsView: View {
     }
     
     private var entryButton: some View {
-        Button(action: {}) {
+        Button(action: {
+            mediumFeedback.impactOccurred()
+            jobStore?.enterJob(
+                jobID: jobID,
+                companyName: businessName,
+                companyLogo: companyLogo,
+                title: title,
+                category: "イベント"
+            )
+            showEntrySheet = true
+        }) {
             Label {
                 Text("今すぐエントリー")
                     .font(.headline)
@@ -2238,6 +2290,12 @@ struct EventDetailsView: View {
             }
         }
         .buttonStyle(.glassProminent)
+        .sheet(isPresented: $showEntrySheet) {
+            AppStep2View(jobID: jobID, category: "イベント", isPresented: .constant(nil))
+                .presentationDetents([.fraction(UIScreen.main.bounds.height < 700 ? 0.65 : 0.44)])
+                .presentationBackground(Color.clear)
+                .interactiveDismissDisabled(true)
+        }
     }
     
     private var applySheetContent: some View {
@@ -2658,6 +2716,48 @@ struct AnimatedMeshGradientBackground: View {
             payAdded: "220"
         )
         .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
+struct ChevronDownShape: Shape {
+    func path(in rect: CGRect) -> Path {
+        let cornerRadius: CGFloat = 14
+        let arrowHeight: CGFloat = 16
+
+        var path = Path()
+
+        // Start at top-left after corner radius
+        path.move(to: CGPoint(x: rect.minX + cornerRadius, y: rect.minY))
+
+        // Top edge
+        path.addLine(to: CGPoint(x: rect.maxX - cornerRadius, y: rect.minY))
+
+        // Top-right corner
+        path.addQuadCurve(
+            to: CGPoint(x: rect.maxX, y: rect.minY + cornerRadius),
+            control: CGPoint(x: rect.maxX, y: rect.minY)
+        )
+
+        // Right edge down to where arrow starts
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY - arrowHeight))
+
+        // Seamless diagonal to arrow tip
+        path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
+
+        // Arrow tip back up to left side
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.maxY - arrowHeight))
+
+        // Left edge up to corner
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.minY + cornerRadius))
+
+        // Top-left corner
+        path.addQuadCurve(
+            to: CGPoint(x: rect.minX + cornerRadius, y: rect.minY),
+            control: CGPoint(x: rect.minX, y: rect.minY)
+        )
+
+        path.closeSubpath()
+        return path
     }
 }
 

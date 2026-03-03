@@ -57,6 +57,8 @@ struct MessagesChatView: View {
     @State private var hasScrolledToBottom = false
     @State private var showBottomSheet: Bool = true
     @State private var scoutAccepted: Bool = false
+    @State private var demoBlurCards: Bool = false
+    @State private var demoSingleCard: Bool = false
 
     init(conversation: ChatConversation, currentUserUID: String) {
         self.conversation = conversation
@@ -122,7 +124,9 @@ struct MessagesChatView: View {
                     readByCount: 1
                 )
                 messages.append(entryMessage)
-            }
+            },
+            demoBlurCards: demoBlurCards,
+            demoSingleCard: demoSingleCard
         )
         .id(message.id)
         .padding(.bottom, bottomSpacing)
@@ -433,6 +437,24 @@ struct MessagesChatView: View {
                     } label: {
                         Label("会話を削除", systemImage: "trash")
                     }
+
+                    Divider()
+
+                    Button {
+                        withAnimation {
+                            demoBlurCards.toggle()
+                        }
+                    } label: {
+                        Label(demoBlurCards ? "デモモード解除" : "デモモード", systemImage: demoBlurCards ? "eye" : "eye.slash")
+                    }
+
+                    Button {
+                        withAnimation {
+                            demoSingleCard.toggle()
+                        }
+                    } label: {
+                        Label(demoSingleCard ? "複数カード表示" : "シングルカード", systemImage: demoSingleCard ? "rectangle.stack" : "rectangle")
+                    }
                 } label: {
                     Image(systemName: "ellipsis")
                 }
@@ -573,8 +595,11 @@ struct ConversationBubbleView: View {
     let onEdit: () -> Void
     let onUndoSend: () -> Void
     var onEntry: (() -> Void)? = nil
+    var demoBlurCards: Bool = false
+    var demoSingleCard: Bool = false
 
     @State private var isSingleLine = false
+    @State private var demoCardsAccepted = false
 
     private var canEdit: Bool {
         isFromCurrentUser && !message.isDeleted && message.timestamp.timeIntervalSinceNow > -900
@@ -646,15 +671,80 @@ struct ConversationBubbleView: View {
                 }
 
                 if !message.inlineRecruitmentCards.isEmpty {
+                    let cardsToShow = demoSingleCard
+                        ? Array(message.inlineRecruitmentCards.prefix(1))
+                        : message.inlineRecruitmentCards
+
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 10) {
-                            ForEach(message.inlineRecruitmentCards) { recruitment in
-                                InlineRecruitmentCardView(recruitment: recruitment, onEntry: onEntry)
+                            ForEach(cardsToShow) { recruitment in
+                                InlineRecruitmentCardView(
+                                    recruitment: recruitment,
+                                    onEntry: onEntry,
+                                    hideBodyText: demoSingleCard
+                                )
                                     .frame(width: 280)
+                                    .overlay {
+                                        if demoBlurCards && !demoCardsAccepted {
+                                            ZStack {
+                                                Rectangle()
+                                                    .fill(.ultraThinMaterial)
+                                                    .allowsHitTesting(true)
+
+                                                VStack(spacing: 12) {
+                                                    Image(systemName: "tray.badge.fill")
+                                                        .font(.title)
+                                                        .foregroundStyle(.secondary)
+                                                    Text("スカウトが届いています。\n承諾して開封します。")
+                                                        .font(.headline)
+                                                        .fontWeight(.semibold)
+                                                        .foregroundStyle(.secondary)
+                                                        .multilineTextAlignment(.center)
+                                                    Button {
+                                                        withAnimation(.spring(duration: 0.4)) {
+                                                            demoCardsAccepted = true
+                                                        }
+                                                    } label: {
+                                                        Text("スカウトを承諾")
+                                                            .font(.subheadline)
+                                                            .fontWeight(.bold)
+                                                    }
+                                                    .buttonStyle(.borderedProminent)
+                                                    .padding(.top, 4)
+                                                }
+                                            }
+                                            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+                                            .transition(.opacity)
+                                        }
+                                    }
                             }
                         }
                     }
                     .scrollClipDisabled()
+                    .onChange(of: demoBlurCards) { _, newValue in
+                        if newValue {
+                            demoCardsAccepted = false
+                        }
+                    }
+
+                    // In single card mode, show the body text as a separate chat bubble
+                    if demoSingleCard {
+                        Text("""
+松本知大さま、こんにちは！
+Solvvy株式会社吉丸でございます。
+
+先日はPercify就活EXPOにてありがとうございました！
+松本知大さまにとって有意義なお時間になっておりましたら幸いです。
+
+EXPOでもお伝えしたコンサル選考対策セミナーに加え、
+新たに役員＆新卒入社社員と話せるポジション別説明会を開催いたします！ぜひご参加ください！
+""")
+                        .font(.body)
+                        .padding(12)
+                        .background(Color(.systemGray5))
+                        .foregroundColor(.primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 18))
+                    }
                 }
 
                 if shouldShowTimestamp {
@@ -690,6 +780,7 @@ struct ConversationBubbleView: View {
 struct InlineRecruitmentCardView: View {
     let recruitment: Recruitment
     var onEntry: (() -> Void)? = nil
+    var hideBodyText: Bool = false
 
     @Environment(\.dismiss) private var dismiss
     @State private var imageOpacity: Double = 0
@@ -801,8 +892,9 @@ struct InlineRecruitmentCardView: View {
                         .padding()
                     }
                     
-                    HStack {
-                        Text("""
+                    if !hideBodyText {
+                        HStack {
+                            Text("""
 松本知大さま、こんにちは！
 Solvvy株式会社吉丸でございます。
 
@@ -812,10 +904,11 @@ Solvvy株式会社吉丸でございます。
 EXPOでもお伝えしたコンサル選考対策セミナーに加え、
 新たに役員＆新卒入社社員と話せるポジション別説明会を開催いたします！ぜひご参加ください！
 """)
-                        .font(.subheadline)
-                        .padding(.all, 12)
+                            .font(.subheadline)
+                            .padding(.all, 12)
+                        }
+                        .padding(.all, 10)
                     }
-                    .padding(.all, 10)
                 }
                 //.background(Color.background)
             }
@@ -904,7 +997,8 @@ EXPOでもお伝えしたコンサル選考対策セミナーに加え、
                 jobDuration: "3ヶ月〜長期",
                 roleKind: recruitment.typeRight,
                 payHourly: recruitment.pay1Value,
-                payAdded: recruitment.pay2Value
+                payAdded: recruitment.pay2Value,
+                badgeText: recruitment.badgeText
             )
             .navigationTransition(.zoom(sourceID: "inlineCard_\(recruitment.id)", in: transition))
         }

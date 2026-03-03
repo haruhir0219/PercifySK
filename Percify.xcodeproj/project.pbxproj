@@ -11,6 +11,7 @@
 		C987404E2F45A32400D1CFF1 /* Shimmer in Frameworks */ = {isa = PBXBuildFile; productRef = C987404D2F45A32400D1CFF1 /* Shimmer */; };
 		C9892D522F0DC87B00855C6A /* ConfettiSwiftUI in Frameworks */ = {isa = PBXBuildFile; productRef = C9892D512F0DC87B00855C6A /* ConfettiSwiftUI */; };
 		C9892D542F0E31C400855C6A /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C9892D532F0E31C400855C6A /* AppIcon.icon */; };
+		C99B11932F56C25A00A13E16 /* SwiftGlass in Frameworks */ = {isa = PBXBuildFile; productRef = C99B11922F56C25A00A13E16 /* SwiftGlass */; };
 		C9BD5E782F154EAF001E6604 /* GlowGetter in Frameworks */ = {isa = PBXBuildFile; productRef = C9BD5E772F154EAF001E6604 /* GlowGetter */; };
 /* End PBXBuildFile section */
 
@@ -48,6 +49,7 @@
 				C987404E2F45A32400D1CFF1 /* Shimmer in Frameworks */,
 				C9BD5E782F154EAF001E6604 /* GlowGetter in Frameworks */,
 				C9892D522F0DC87B00855C6A /* ConfettiSwiftUI in Frameworks */,
+				C99B11932F56C25A00A13E16 /* SwiftGlass in Frameworks */,
 				C97DE7652EC457E700BDD8DB /* Glur in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -96,6 +98,7 @@
 				C9892D512F0DC87B00855C6A /* ConfettiSwiftUI */,
 				C9BD5E772F154EAF001E6604 /* GlowGetter */,
 				C987404D2F45A32400D1CFF1 /* Shimmer */,
+				C99B11922F56C25A00A13E16 /* SwiftGlass */,
 			);
 			productName = Percify;
 			productReference = C99603B82E94B85000066E4D /* Percify.app */;
@@ -131,6 +134,7 @@
 				C9892D502F0DC87B00855C6A /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */,
 				C9BD5E762F154EAF001E6604 /* XCRemoteSwiftPackageReference "GlowGetter" */,
 				C987404C2F45A32400D1CFF1 /* XCRemoteSwiftPackageReference "SwiftUI-Shimmer" */,
+				C99B11912F56C25A00A13E16 /* XCRemoteSwiftPackageReference "SwiftGlass" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C99603B92E94B85000066E4D /* Products */;
@@ -428,6 +432,14 @@
 				minimumVersion = 3.0.0;
 			};
 		};
+		C99B11912F56C25A00A13E16 /* XCRemoteSwiftPackageReference "SwiftGlass" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/1998code/SwiftGlass";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 26.0.1;
+			};
+		};
 		C9BD5E762F154EAF001E6604 /* XCRemoteSwiftPackageReference "GlowGetter" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/Aeastr/GlowGetter";
@@ -453,6 +465,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = C9892D502F0DC87B00855C6A /* XCRemoteSwiftPackageReference "ConfettiSwiftUI" */;
 			productName = ConfettiSwiftUI;
+		};
+		C99B11922F56C25A00A13E16 /* SwiftGlass */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C99B11912F56C25A00A13E16 /* XCRemoteSwiftPackageReference "SwiftGlass" */;
+			productName = SwiftGlass;
 		};
 		C9BD5E772F154EAF001E6604 /* GlowGetter */ = {
 			isa = XCSwiftPackageProductDependency;

@@ -19,6 +19,7 @@ enum TabIdentifier: Hashable {
 struct ContentView: View {
     @State private var searchText: String = ""
     @State private var selectedTab: TabIdentifier = .discover
+    @State private var jobStore = JobStore()
 
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -43,7 +44,7 @@ struct ContentView: View {
             
             Tab(value: TabIdentifier.discover) {
                 NavigationStack {
-                    DiscoverView()
+                    DiscoverView(jobStore: jobStore)
                 }
                 //.searchable(text: $searchText)
             } label: {
@@ -61,12 +62,13 @@ struct ContentView: View {
 
             Tab(value: TabIdentifier.profile, role: .search) {
                 NavigationStack {
-                    ProfileView()
+                    ProfileView(jobStore: jobStore)
                 }
             } label: {
                 Label("マイページ", systemImage: "person.crop.circle.fill")
             }
         }
+        .environment(jobStore)
         .preferredColorScheme(.light)
     }
 }

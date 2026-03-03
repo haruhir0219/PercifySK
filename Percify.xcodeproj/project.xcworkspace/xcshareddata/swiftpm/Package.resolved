@@ -1,5 +1,5 @@
 {
-  "originHash" : "168c4f720807ce0371932d9c5c6d903162f1acfa901e696b746b085342818a07",
+  "originHash" : "0d74f7c7ddc9666d4ecff600ab9fc3762e15b0f6a7bd3f6eed1cebfe64311560",
   "pins" : [
     {
       "identity" : "confettiswiftui",
@@ -26,6 +26,15 @@
       "state" : {
         "revision" : "178af6499ed7957c7f91187fdee2b09d322f5b87",
         "version" : "1.1.0"
+      }
+    },
+    {
+      "identity" : "swiftglass",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/1998code/SwiftGlass",
+      "state" : {
+        "revision" : "b11729993a2f4a4f11d17ee833ec05b2140400c5",
+        "version" : "26.0.1"
       }
     },
     {

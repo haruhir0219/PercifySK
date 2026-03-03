@@ -2,6 +2,7 @@ import SwiftUI
 import Shimmer
 
 struct ProfileView: View {
+    @Bindable var jobStore: JobStore
     @State private var selectedCard: ProfileCardItem?
 
     private func settingNavigationLink(icon: String, title: String, gradientColors: [Color]) -> some View {
@@ -39,9 +40,10 @@ struct ProfileView: View {
                         VStack(alignment: .leading) {
                             Text("松本 知大")
                                 .font(.headline)
-                            Text("2028年度卒")
+                            Text("2028年度卒・慶應義塾大")
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
+                                .fixedSize(horizontal: true, vertical: false)
                         }
                         Spacer()
                         ArcTextBadgeView()
@@ -278,11 +280,17 @@ struct ProfileView: View {
             .listSectionSpacing(.compact)
             .padding(.top, -20)
             .navigationDestination(item: $selectedCard) { card in
-                ProfileSettingItemPlaceholderView(
-                    icon: card.icon,
-                    title: card.title,
-                    gradientColors: [.accentColor.opacity(0.5), .accentColor]
-                )
+                if card.title == "あなたの企業一覧" {
+                    FavoriteCompaniesView(jobStore: jobStore)
+                } else if card.title == "エントリー済み" {
+                    EnteredJobsListView(jobStore: jobStore)
+                } else {
+                    ProfileSettingItemPlaceholderView(
+                        icon: card.icon,
+                        title: card.title,
+                        gradientColors: [.accentColor.opacity(0.5), .accentColor]
+                    )
+                }
             }
             .navigationTitle("マイページ")
             .toolbarTitleDisplayMode(.inlineLarge)
@@ -400,8 +408,59 @@ struct SettingRowView: View {
     }
 }
 
+// MARK: - Entered Jobs List
+
+struct EnteredJobsListView: View {
+    var jobStore: JobStore
+
+    var body: some View {
+        List {
+            if jobStore.enteredJobs.isEmpty {
+                ContentUnavailableView(
+                    "エントリーはまだありません",
+                    systemImage: "checkmark.circle",
+                    description: Text("求人やイベントにエントリーすると、ここに表示されます。")
+                )
+            } else {
+                ForEach(jobStore.enteredJobs) { entry in
+                    HStack(spacing: 14) {
+                        Image(entry.companyLogo)
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 44, height: 44)
+                            .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .strokeBorder(Color(.separator), lineWidth: 0.5)
+                            )
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(entry.companyName)
+                                .font(.headline)
+                            Text(entry.title)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .lineLimit(2)
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing, spacing: 4) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                            Text(entry.enteredDate, style: .date)
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                    .padding(.vertical, 4)
+                }
+            }
+        }
+        .navigationTitle("エントリー済み")
+        .navigationBarTitleDisplayMode(.inline)
+    }
+}
+
 #Preview {
-    ProfileView()
+    ProfileView(jobStore: JobStore())
 }
 
 
